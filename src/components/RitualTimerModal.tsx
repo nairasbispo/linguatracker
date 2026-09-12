@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Play, Pause, RotateCcw, CheckCircle, Sparkles } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { getLocalDateString } from '../lib/dateUtils';
 import confetti from 'canvas-confetti';
 
 export const RitualTimerModal: React.FC = () => {
@@ -86,7 +87,7 @@ export const RitualTimerModal: React.FC = () => {
     const totalMin = Math.max(1, Math.round(elapsedSeconds / 60) || targetDurationMinutes);
     createSession({
       languageId: selectedLanguage,
-      date: new Date().toISOString().split('T')[0],
+      date: getLocalDateString(new Date()),
       listening: selectedSkill === 'listening' ? totalMin : 0,
       speaking: selectedSkill === 'speaking' ? totalMin : 0,
       reading: selectedSkill === 'reading' ? totalMin : 0,

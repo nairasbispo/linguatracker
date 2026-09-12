@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import confetti from 'canvas-confetti';
+import { getLocalDateString } from '../lib/dateUtils';
 import type { SkillContentDetail } from '../types';
 
 const LISTENING_FORMATS = [
@@ -103,7 +104,7 @@ export const LogSessionModal: React.FC = () => {
   const [languageId, setLanguageId] = useState<string>(
     selectedLanguageForModal || languages[0]?.id || 'en'
   );
-  const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState<string>(getLocalDateString(new Date()));
 
   // Skill minutes
   const [listening, setListening] = useState<number>(0);
@@ -210,7 +211,7 @@ export const LogSessionModal: React.FC = () => {
       // Save session
       await createSession({
         languageId,
-        date: date || new Date().toISOString().split('T')[0],
+        date: date || getLocalDateString(new Date()),
         listening: Number(listening || 0),
         speaking: Number(speaking || 0),
         reading: Number(reading || 0),

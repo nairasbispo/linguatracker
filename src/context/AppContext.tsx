@@ -2,6 +2,12 @@ import React, { createContext, useContext, useEffect, useState, useMemo } from '
 import { doc, collection } from 'firebase/firestore';
 import type { Language, PracticeSession, GrammarTopic, VocabularyWord, LanguageGoal } from '../types';
 import {
+  getLocalDateString,
+  parseLocalDate,
+  isTodayLocal,
+  isDateInCurrentWeekLocal,
+} from '../lib/dateUtils';
+import {
   db,
   subscribeToCollection,
   ensureInitialLanguagesIfEmpty,
@@ -246,24 +252,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Helper date functions
   const isDateInCurrentWeek = (dateStr: string) => {
-    const d = new Date(dateStr + 'T00:00:00');
-    const now = new Date();
-    const day = now.getDay(); // 0 is Sunday
-    const diffToMonday = (day === 0 ? -6 : 1) - day;
-    const monday = new Date(now);
-    monday.setDate(now.getDate() + diffToMonday);
-    monday.setHours(0, 0, 0, 0);
-
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    sunday.setHours(23, 59, 59, 999);
-
-    return d >= monday && d <= sunday;
+    return isDateInCurrentWeekLocal(dateStr);
   };
 
   const isToday = (dateStr: string) => {
-    const todayStr = new Date().toISOString().split('T')[0];
-    return dateStr === todayStr;
+    return isTodayLocal(dateStr);
   };
 
   // Compute stats per language
@@ -286,18 +279,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Active distinct days in current week
       const distinctDaysThisWeek = new Set(weekSessions.map((s) => s.date)).size;
 
-      // Calculate streak
+      // Calculate streak accurately using local calendar dates
       const distinctAllDays = Array.from(new Set(langSessions.map((s) => s.date))).sort().reverse();
       let streak = 0;
-      const today = new Date().toISOString().split('T')[0];
-      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+      const today = getLocalDateString(new Date());
+      const yesterdayDate = new Date();
+      yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+      const yesterday = getLocalDateString(yesterdayDate);
 
       if (distinctAllDays.length > 0) {
         let checkDate = distinctAllDays[0] === today ? today : distinctAllDays[0] === yesterday ? yesterday : null;
         if (checkDate) {
           streak = 1;
           for (let i = 1; i < distinctAllDays.length; i++) {
-            const expectedPrev = new Date(new Date(checkDate).getTime() - 86400000).toISOString().split('T')[0];
+            const prevD = parseLocalDate(checkDate);
+            prevD.setDate(prevD.getDate() - 1);
+            const expectedPrev = getLocalDateString(prevD);
             if (distinctAllDays[i] === expectedPrev) {
               streak++;
               checkDate = expectedPrev;
