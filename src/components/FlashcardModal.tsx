@@ -110,9 +110,30 @@ export const FlashcardModal: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-3 animate-in fade-in zoom-in-95 duration-150">
-                <div className="text-xl font-bold text-slate-900">
-                  {currentWord.meaning}
-                </div>
+                {currentWord.meaningEn ? (
+                  <div className="space-y-2.5 max-w-xs mx-auto text-left">
+                    <div className="bg-white p-2.5 rounded-xl border border-amber-200 shadow-2xs">
+                      <div className="text-[10px] font-bold text-amber-900 uppercase tracking-wider mb-0.5">
+                        FR • Définition
+                      </div>
+                      <div className="text-sm font-semibold text-slate-800">
+                        {currentWord.meaning}
+                      </div>
+                    </div>
+                    <div className="bg-white p-2.5 rounded-xl border border-emerald-200 shadow-2xs">
+                      <div className="text-[10px] font-bold text-emerald-900 uppercase tracking-wider mb-0.5">
+                        EN • Meaning
+                      </div>
+                      <div className="text-sm font-semibold text-slate-800">
+                        {currentWord.meaningEn}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-xl font-bold text-slate-900">
+                    {currentWord.meaning}
+                  </div>
+                )}
                 {currentWord.example && (
                   <p className="text-xs text-slate-500 italic bg-white p-2.5 rounded-xl border border-slate-100 max-w-xs">
                     "{currentWord.example}"

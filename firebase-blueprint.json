@@ -64,6 +64,7 @@
         "word": { "type": "string", "maxLength": 200 },
         "pronunciation": { "type": "string", "maxLength": 200 },
         "meaning": { "type": "string", "maxLength": 500 },
+        "meaningEn": { "type": "string", "maxLength": 500 },
         "example": { "type": "string", "maxLength": 1000 },
         "createdAt": { "type": "number" },
         "userId": { "type": "string", "maxLength": 128 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Volume2, Sparkles, Loader2, Check } from 'lucide-react';
+import { X, Volume2, Sparkles, Loader2, Check, RefreshCw } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { fetchPhonetic } from '../services/phoneticService';
 
@@ -11,21 +11,81 @@ export const AddWordModal: React.FC = () => {
   );
   const [word, setWord] = useState<string>('');
   const [pronunciation, setPronunciation] = useState<string>('');
-  const [meaning, setMeaning] = useState<string>('');
+  const [meaning, setMeaning] = useState<string>(''); // French definition (for FR) or English definition (for EN)
+  const [meaningEn, setMeaningEn] = useState<string>(''); // English meaning/translation (specifically for French words)
   const [example, setExample] = useState<string>('');
+
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [isFetchingPhonetic, setIsFetchingPhonetic] = useState<boolean>(false);
-  const [suggestedMeaning, setSuggestedMeaning] = useState<string | null>(null);
-  const [suggestedExample, setSuggestedExample] = useState<string | null>(null);
+  const [isFetchingDetails, setIsFetchingDetails] = useState<boolean>(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState<boolean>(false);
   const [isPhoneticAutoFilled, setIsPhoneticAutoFilled] = useState<boolean>(false);
+  const [isMeaningAutoFilled, setIsMeaningAutoFilled] = useState<boolean>(false);
+  const [isMeaningEnAutoFilled, setIsMeaningEnAutoFilled] = useState<boolean>(false);
 
-  // Track if the user manually modified the pronunciation field
+  // Track if the user explicitly typed their own custom values
   const userEditedPronunciationRef = useRef<boolean>(false);
+  const userEditedMeaningRef = useRef<boolean>(false);
+  const userEditedMeaningEnRef = useRef<boolean>(false);
 
   const selectedLang = languages.find((l) => l.id === languageId) || languages[0];
+  const isFrench =
+    selectedLang?.code === 'fr' ||
+    selectedLang?.name?.toLowerCase().includes('french') ||
+    selectedLang?.name?.toLowerCase().includes('français');
 
-  // Auto-fetch phonetic only after user stops typing (1200ms debounce), non-intrusive
+  // Helper function to fetch and auto-populate word details
+  const executeFetchDetails = async (
+    targetWord: string,
+    targetLangName: string,
+    isTargetFrench: boolean
+  ) => {
+    const clean = targetWord.trim();
+    if (!clean || clean.length < 2) return;
+
+    setIsFetchingDetails(true);
+    try {
+      const result = await fetchPhonetic(clean, targetLangName);
+      
+      // Auto-fill phonetic if user hasn't manually edited it
+      if (result.phonetic && !userEditedPronunciationRef.current) {
+        setPronunciation(result.phonetic);
+        setIsPhoneticAutoFilled(true);
+      }
+
+      if (isTargetFrench) {
+        // French word: fill French definition AND English meaning
+        if (result.meaningFr && !userEditedMeaningRef.current) {
+          setMeaning(result.meaningFr);
+          setIsMeaningAutoFilled(true);
+        } else if (result.suggestedMeaning && !userEditedMeaningRef.current) {
+          setMeaning(result.suggestedMeaning);
+          setIsMeaningAutoFilled(true);
+        }
+
+        if (result.meaningEn && !userEditedMeaningEnRef.current) {
+          setMeaningEn(result.meaningEn);
+          setIsMeaningEnAutoFilled(true);
+        }
+      } else {
+        // English word: fill English definition only
+        if ((result.meaningEn || result.suggestedMeaning) && !userEditedMeaningRef.current) {
+          setMeaning(result.meaningEn || result.suggestedMeaning || '');
+          setIsMeaningAutoFilled(true);
+        }
+      }
+
+      // Auto-fill context example if empty
+      if (result.example && !example.trim()) {
+        setExample(result.example);
+      }
+    } catch (e) {
+      console.error('Error auto-generating word meaning and phonetic:', e);
+    } finally {
+      setIsFetchingDetails(false);
+    }
+  };
+
+  // Auto-fetch details after user pauses typing (700ms debounce)
   useEffect(() => {
     if (modal !== 'addWord') return;
 
@@ -35,50 +95,37 @@ export const AddWordModal: React.FC = () => {
         setPronunciation('');
         setIsPhoneticAutoFilled(false);
       }
-      setSuggestedMeaning(null);
-      setSuggestedExample(null);
+      if (!userEditedMeaningRef.current) {
+        setMeaning('');
+        setIsMeaningAutoFilled(false);
+      }
+      if (!userEditedMeaningEnRef.current) {
+        setMeaningEn('');
+        setIsMeaningEnAutoFilled(false);
+      }
       return;
     }
 
-    const timer = setTimeout(async () => {
-      // Only auto-fetch if user hasn't explicitly typed pronunciation or meaning
-      if (userEditedPronunciationRef.current || meaning.trim()) {
-        return;
-      }
-
-      setIsFetchingPhonetic(true);
-      try {
-        const result = await fetchPhonetic(trimmedWord, selectedLang?.name || 'English');
-        if (result.phonetic && !userEditedPronunciationRef.current) {
-          setPronunciation(result.phonetic);
-          setIsPhoneticAutoFilled(true);
-        }
-        if (result.suggestedMeaning && !meaning.trim()) {
-          setSuggestedMeaning(result.suggestedMeaning);
-        }
-        if (result.example && !example.trim()) {
-          setSuggestedExample(result.example);
-        }
-      } catch (e) {
-        console.error('Error fetching phonetic:', e);
-      } finally {
-        setIsFetchingPhonetic(false);
-      }
-    }, 1200);
+    const timer = setTimeout(() => {
+      executeFetchDetails(trimmedWord, selectedLang?.name || 'English', isFrench);
+    }, 700);
 
     return () => clearTimeout(timer);
-  }, [word, languageId, modal, selectedLang, meaning, example]);
+  }, [word, languageId, modal, selectedLang, isFrench]);
 
   // Reset states on modal open
   useEffect(() => {
     if (modal === 'addWord') {
       userEditedPronunciationRef.current = false;
+      userEditedMeaningRef.current = false;
+      userEditedMeaningEnRef.current = false;
       setIsPhoneticAutoFilled(false);
-      setSuggestedMeaning(null);
-      setSuggestedExample(null);
+      setIsMeaningAutoFilled(false);
+      setIsMeaningEnAutoFilled(false);
       setWord('');
       setPronunciation('');
       setMeaning('');
+      setMeaningEn('');
       setExample('');
       if (selectedLanguageForModal) {
         setLanguageId(selectedLanguageForModal);
@@ -88,29 +135,12 @@ export const AddWordModal: React.FC = () => {
 
   if (modal !== 'addWord') return null;
 
-  // Manual trigger for phonetic fetch
-  const handleManualFetchPhonetic = async () => {
-    const trimmedWord = word.trim();
-    if (!trimmedWord) return;
-
-    setIsFetchingPhonetic(true);
-    try {
-      const result = await fetchPhonetic(trimmedWord, selectedLang?.name || 'English');
-      if (result.phonetic) {
-        setPronunciation(result.phonetic);
-        setIsPhoneticAutoFilled(true);
-      }
-      if (result.suggestedMeaning) {
-        setSuggestedMeaning(result.suggestedMeaning);
-      }
-      if (result.example) {
-        setSuggestedExample(result.example);
-      }
-    } catch (e) {
-      console.error('Manual phonetic lookup failed:', e);
-    } finally {
-      setIsFetchingPhonetic(false);
-    }
+  // Manual regenerate trigger
+  const handleRegenerate = async () => {
+    userEditedMeaningRef.current = false;
+    userEditedMeaningEnRef.current = false;
+    userEditedPronunciationRef.current = false;
+    await executeFetchDetails(word, selectedLang?.name || 'English', isFrench);
   };
 
   const handleTestAudio = () => {
@@ -134,21 +164,66 @@ export const AddWordModal: React.FC = () => {
     window.speechSynthesis.speak(utterance);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!word.trim() || !meaning.trim()) return;
+    const trimmedWord = word.trim();
+    if (!trimmedWord) return;
 
     setIsSubmitting(true);
-    createWord({
-      languageId,
-      word: word.trim(),
-      pronunciation: pronunciation.trim() || undefined,
-      meaning: meaning.trim(),
-      example: example.trim() || undefined,
-      createdAt: Date.now(),
-    }).catch(console.error);
 
-    setModal(null);
+    let finalMeaning = meaning.trim();
+    let finalMeaningEn = meaningEn.trim();
+    let finalPronunciation = pronunciation.trim();
+    let finalExample = example.trim();
+
+    // If user clicked Save before auto-fill finished or without typing meaning,
+    // generate it immediately so they never have to type it!
+    if (!finalMeaning || (isFrench && !finalMeaningEn)) {
+      try {
+        const result = await fetchPhonetic(trimmedWord, selectedLang?.name || 'English');
+        if (isFrench) {
+          if (!finalMeaning && result.meaningFr) {
+            finalMeaning = result.meaningFr;
+          }
+          if (!finalMeaningEn && result.meaningEn) {
+            finalMeaningEn = result.meaningEn;
+          }
+        } else {
+          if (!finalMeaning && (result.meaningEn || result.suggestedMeaning)) {
+            finalMeaning = result.meaningEn || result.suggestedMeaning || '';
+          }
+        }
+        if (!finalPronunciation && result.phonetic) {
+          finalPronunciation = result.phonetic;
+        }
+        if (!finalExample && result.example) {
+          finalExample = result.example;
+        }
+      } catch (err) {
+        console.warn('Auto-generation on submit failed:', err);
+      }
+    }
+
+    if (!finalMeaning) {
+      finalMeaning = trimmedWord; // graceful fallback
+    }
+
+    try {
+      await createWord({
+        languageId,
+        word: trimmedWord,
+        pronunciation: finalPronunciation || undefined,
+        meaning: finalMeaning,
+        meaningEn: isFrench && finalMeaningEn ? finalMeaningEn : undefined,
+        example: finalExample || undefined,
+        createdAt: Date.now(),
+      });
+      setModal(null);
+    } catch (err) {
+      console.error('Error saving word:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -168,6 +243,11 @@ export const AddWordModal: React.FC = () => {
             <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
               Add to your word shelf.
             </h2>
+            <p className="text-xs text-slate-500 mt-1">
+              {isFrench
+                ? 'Type a French word — both the French definition and English meaning are generated automatically!'
+                : 'Type an English word — its short meaning and pronunciation are generated automatically!'}
+            </p>
           </div>
           <button
             onClick={() => setModal(null)}
@@ -184,7 +264,21 @@ export const AddWordModal: React.FC = () => {
             </label>
             <select
               value={languageId}
-              onChange={(e) => setLanguageId(e.target.value)}
+              onChange={(e) => {
+                const newId = e.target.value;
+                setLanguageId(newId);
+                const newLang = languages.find((l) => l.id === newId);
+                const isNewFrench =
+                  newLang?.code === 'fr' ||
+                  newLang?.name?.toLowerCase().includes('french') ||
+                  newLang?.name?.toLowerCase().includes('français');
+                if (word.trim().length >= 2) {
+                  userEditedMeaningRef.current = false;
+                  userEditedMeaningEnRef.current = false;
+                  userEditedPronunciationRef.current = false;
+                  executeFetchDetails(word, newLang?.name || 'English', isNewFrench);
+                }
+              }}
               className="w-full px-4 py-2.5 rounded-xl border border-[#E5E0D5] bg-[#FAF8F3] text-slate-800 text-sm font-medium focus:outline-hidden focus:ring-2 focus:ring-[#1E5E44]"
             >
               {languages.map((lang) => (
@@ -197,9 +291,23 @@ export const AddWordModal: React.FC = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                Word or expression
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-bold text-slate-700">
+                  Word or expression
+                </label>
+                {word.trim().length >= 2 && (
+                  <button
+                    type="button"
+                    onClick={() => handleRegenerate()}
+                    disabled={isFetchingDetails}
+                    className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 hover:text-emerald-950 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200/80 transition-colors"
+                    title="Regenerate meanings & IPA"
+                  >
+                    <Sparkles className="w-2.5 h-2.5 text-emerald-600" />
+                    <span>Generate</span>
+                  </button>
+                )}
+              </div>
               <div className="relative">
                 <input
                   type="text"
@@ -208,14 +316,14 @@ export const AddWordModal: React.FC = () => {
                   onChange={(e) => {
                     setWord(e.target.value);
                   }}
-                  placeholder="e.g. Bonjour, Insight"
+                  placeholder={isFrench ? 'e.g. Épanouissement, Démarche' : 'e.g. Serendipity, Insight'}
                   className="w-full px-4 py-2.5 pr-9 rounded-xl border border-[#E5E0D5] bg-[#FAF8F3] text-slate-800 text-sm font-medium focus:outline-hidden focus:ring-2 focus:ring-[#1E5E44]"
                 />
                 {word.trim().length > 0 && (
                   <button
                     type="button"
                     onClick={handleTestAudio}
-                    title="Listen to audio"
+                    title="Listen to audio pronunciation"
                     className={`absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-[#1E5E44] rounded-md transition-colors ${
                       isPlayingAudio ? 'text-emerald-600 animate-pulse' : ''
                     }`}
@@ -232,28 +340,17 @@ export const AddWordModal: React.FC = () => {
                   Pronunciation (phonetic)
                 </label>
                 <div className="flex items-center gap-1.5">
-                  {isFetchingPhonetic ? (
+                  {isFetchingDetails ? (
                     <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 animate-pulse">
                       <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                      <span>Fetching IPA...</span>
+                      <span>IPA...</span>
                     </span>
                   ) : isPhoneticAutoFilled ? (
                     <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 bg-emerald-50/80 px-2 py-0.5 rounded-full border border-emerald-200">
                       <Check className="w-2.5 h-2.5 text-emerald-600" />
                       <span>Auto</span>
                     </span>
-                  ) : (
-                    word.trim().length >= 2 && (
-                      <button
-                        type="button"
-                        onClick={handleManualFetchPhonetic}
-                        className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 hover:text-emerald-950 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200/80 transition-colors"
-                      >
-                        <Sparkles className="w-2.5 h-2.5 text-emerald-600" />
-                        <span>Generate</span>
-                      </button>
-                    )
-                  )}
+                  ) : null}
                 </div>
               </div>
               <div className="relative">
@@ -276,31 +373,175 @@ export const AddWordModal: React.FC = () => {
             </div>
           </div>
 
-          {/* Contextual Translation & Meaning */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-bold text-slate-700">
-                Meaning or personal translation
-              </label>
-              {suggestedMeaning && !meaning.trim() && (
-                <button
-                  type="button"
-                  onClick={() => setMeaning(suggestedMeaning)}
-                  className="text-[11px] text-emerald-700 hover:text-emerald-900 font-semibold underline underline-offset-2 flex items-center gap-1"
-                >
-                  <span>Use suggested: "{suggestedMeaning.slice(0, 28)}{suggestedMeaning.length > 28 ? '...' : ''}"</span>
-                </button>
-              )}
+          {/* MEANINGS SECTION */}
+          {isFrench ? (
+            /* FRENCH WORDS: Show BOTH French Definition and English Meaning */
+            <div className="space-y-3.5 bg-slate-50/70 p-3.5 rounded-2xl border border-slate-200/70">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                  <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                  <span>Meanings (French definition & English translation)</span>
+                </div>
+                {isFetchingDetails && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-full animate-pulse">
+                    <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                    <span>Auto-generating both...</span>
+                  </span>
+                )}
+              </div>
+
+              {/* 1. Meaning in French (Définition en français) */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-semibold text-slate-700">
+                    Meaning in French (Définition en français)
+                  </label>
+                  {isMeaningAutoFilled && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-900 bg-amber-100/80 px-2 py-0.5 rounded-full">
+                      <Check className="w-2.5 h-2.5 text-amber-700" />
+                      <span>Auto (FR)</span>
+                    </span>
+                  )}
+                </div>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={meaning}
+                    onChange={(e) => {
+                      userEditedMeaningRef.current = true;
+                      setIsMeaningAutoFilled(false);
+                      setMeaning(e.target.value);
+                    }}
+                    placeholder={
+                      isFetchingDetails
+                        ? 'Génération de la définition en français...'
+                        : 'e.g. Développement harmonieux de la personnalité (auto-generated)'
+                    }
+                    className={`w-full px-4 py-2.5 rounded-xl border text-slate-800 text-sm font-medium focus:outline-hidden focus:ring-2 focus:ring-[#1E5E44] transition-all ${
+                      isMeaningAutoFilled
+                        ? 'border-amber-300 bg-amber-50/30'
+                        : 'border-[#E5E0D5] bg-white'
+                    }`}
+                  />
+                  {word.trim().length >= 2 && !isFetchingDetails && (
+                    <button
+                      type="button"
+                      onClick={handleRegenerate}
+                      title="Regenerate definition"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-amber-800 rounded-md transition-colors"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* 2. Meaning in English (English translation) */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-semibold text-slate-700">
+                    Meaning in English (Translation)
+                  </label>
+                  {isMeaningEnAutoFilled && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-900 bg-emerald-100/80 px-2 py-0.5 rounded-full">
+                      <Check className="w-2.5 h-2.5 text-emerald-700" />
+                      <span>Auto (EN)</span>
+                    </span>
+                  )}
+                </div>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={meaningEn}
+                    onChange={(e) => {
+                      userEditedMeaningEnRef.current = true;
+                      setIsMeaningEnAutoFilled(false);
+                      setMeaningEn(e.target.value);
+                    }}
+                    placeholder={
+                      isFetchingDetails
+                        ? 'Generating English meaning...'
+                        : 'e.g. Fulfillment, flourishing, blossoming (auto-generated)'
+                    }
+                    className={`w-full px-4 py-2.5 rounded-xl border text-slate-800 text-sm font-medium focus:outline-hidden focus:ring-2 focus:ring-[#1E5E44] transition-all ${
+                      isMeaningEnAutoFilled
+                        ? 'border-emerald-300 bg-emerald-50/30'
+                        : 'border-[#E5E0D5] bg-white'
+                    }`}
+                  />
+                </div>
+              </div>
+
+              <p className="text-[11px] text-slate-500 flex items-center justify-between">
+                <span>✨ Both French definition and English meaning auto-fill instantly.</span>
+                {(isMeaningAutoFilled || isMeaningEnAutoFilled) && (
+                  <span className="text-emerald-700 font-medium">Ready to save!</span>
+                )}
+              </p>
             </div>
-            <input
-              type="text"
-              required
-              value={meaning}
-              onChange={(e) => setMeaning(e.target.value)}
-              placeholder="e.g. Hello, good morning"
-              className="w-full px-4 py-2.5 rounded-xl border border-[#E5E0D5] bg-[#FAF8F3] text-slate-800 text-sm font-medium focus:outline-hidden focus:ring-2 focus:ring-[#1E5E44]"
-            />
-          </div>
+          ) : (
+            /* ENGLISH WORDS: Show English Definition Only (No Portuguese!) */
+            <div>
+              <div className="flex items-center justify-between mb-1.5 flex-wrap gap-1.5">
+                <div className="flex items-center gap-2">
+                  <label className="block text-xs font-bold text-slate-700">
+                    Short meaning (English)
+                  </label>
+                  {isFetchingDetails ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 animate-pulse">
+                      <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                      <span>Generating English definition...</span>
+                    </span>
+                  ) : isMeaningAutoFilled ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 bg-emerald-50/90 px-2 py-0.5 rounded-full border border-emerald-200/80">
+                      <Sparkles className="w-2.5 h-2.5 text-emerald-600" />
+                      <span>Auto-generated</span>
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="relative">
+                <input
+                  type="text"
+                  value={meaning}
+                  onChange={(e) => {
+                    userEditedMeaningRef.current = true;
+                    setIsMeaningAutoFilled(false);
+                    setMeaning(e.target.value);
+                  }}
+                  placeholder={
+                    isFetchingDetails
+                      ? 'Generating English definition automatically...'
+                      : 'e.g. Deep intuitive understanding (auto-generated)'
+                  }
+                  className={`w-full px-4 py-2.5 rounded-xl border text-slate-800 text-sm font-medium focus:outline-hidden focus:ring-2 focus:ring-[#1E5E44] transition-all ${
+                    isMeaningAutoFilled
+                      ? 'border-emerald-300 bg-emerald-50/20'
+                      : 'border-[#E5E0D5] bg-[#FAF8F3]'
+                  }`}
+                />
+
+                {word.trim().length >= 2 && !isFetchingDetails && (
+                  <button
+                    type="button"
+                    onClick={handleRegenerate}
+                    title="Generate a new short meaning"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-emerald-700 rounded-md transition-colors"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+              
+              <p className="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
+                <span>✨ No typing needed: English definition auto-fills as soon as you type the word.</span>
+                {isMeaningAutoFilled && (
+                  <span className="text-emerald-700 font-medium">Ready to save!</span>
+                )}
+              </p>
+            </div>
+          )}
 
           {/* Example sentence */}
           <div>
@@ -308,21 +549,21 @@ export const AddWordModal: React.FC = () => {
               <label className="block text-xs font-bold text-slate-700">
                 Example sentence or context
               </label>
-              {suggestedExample && !example.trim() && (
-                <button
-                  type="button"
-                  onClick={() => setExample(suggestedExample)}
-                  className="text-[11px] text-emerald-700 hover:text-emerald-900 font-semibold underline underline-offset-2 flex items-center gap-1"
-                >
-                  <span>Use suggested example</span>
-                </button>
+              {example && (
+                <span className="text-[10px] text-slate-400 font-medium">
+                  Contextual sentence
+                </span>
               )}
             </div>
             <textarea
               rows={2}
               value={example}
               onChange={(e) => setExample(e.target.value)}
-              placeholder="e.g. Bonjour tout le monde !"
+              placeholder={
+                isFrench
+                  ? 'e.g. Ce travail contribue grandement à son épanouissement personnel.'
+                  : 'e.g. Her insight into the problem saved us days of work.'
+              }
               className="w-full px-4 py-2.5 rounded-xl border border-[#E5E0D5] bg-[#FAF8F3] text-slate-800 text-sm focus:outline-hidden focus:ring-2 focus:ring-[#1E5E44] placeholder:text-slate-400"
             ></textarea>
           </div>
@@ -337,10 +578,17 @@ export const AddWordModal: React.FC = () => {
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="px-6 py-2.5 rounded-full bg-[#1E5E44] hover:bg-[#184E38] text-white text-sm font-semibold shadow-sm transition-all transform active:scale-95 disabled:opacity-50"
+              disabled={isSubmitting || !word.trim()}
+              className="px-6 py-2.5 rounded-full bg-[#1E5E44] hover:bg-[#184E38] text-white text-sm font-semibold shadow-sm transition-all transform active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
             >
-              {isSubmitting ? 'Saving...' : 'Save word'}
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Saving word...</span>
+                </>
+              ) : (
+                <span>Save word</span>
+              )}
             </button>
           </div>
         </form>

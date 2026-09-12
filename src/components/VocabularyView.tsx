@@ -187,10 +187,33 @@ export const VocabularyView: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Meaning */}
-                  <p className="text-sm text-slate-600 leading-relaxed font-normal">
-                    {item.meaning}
-                  </p>
+                  {/* Meaning(s) */}
+                  {item.languageId === 'fr' || item.meaningEn ? (
+                    <div className="space-y-2 mb-3">
+                      <div className="bg-amber-50/70 border border-amber-200/70 rounded-xl p-2.5">
+                        <span className="text-[10px] font-bold text-amber-900 uppercase tracking-wider block mb-0.5">
+                          FR • Définition
+                        </span>
+                        <p className="text-sm font-medium text-slate-800 leading-snug">
+                          {item.meaning}
+                        </p>
+                      </div>
+                      {item.meaningEn && (
+                        <div className="bg-emerald-50/70 border border-emerald-200/70 rounded-xl p-2.5">
+                          <span className="text-[10px] font-bold text-emerald-900 uppercase tracking-wider block mb-0.5">
+                            EN • Meaning
+                          </span>
+                          <p className="text-sm font-medium text-slate-800 leading-snug">
+                            {item.meaningEn}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-600 leading-relaxed font-normal mb-3">
+                      {item.meaning}
+                    </p>
+                  )}
 
                   {/* Example if any */}
                   {item.example && (

@@ -54,6 +54,7 @@ export interface VocabularyWord {
   word: string;
   pronunciation?: string;
   meaning: string;
+  meaningEn?: string; // English meaning/translation (used for French words)
   example?: string;
   mastered?: boolean;
   createdAt: number;

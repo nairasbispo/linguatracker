@@ -6,6 +6,8 @@
 export interface PhoneticResult {
   phonetic: string | null;
   suggestedMeaning?: string | null;
+  meaningFr?: string | null;
+  meaningEn?: string | null;
   example?: string | null;
 }
 
@@ -15,10 +17,10 @@ export async function fetchPhonetic(
 ): Promise<PhoneticResult> {
   const cleanWord = word.trim();
   if (!cleanWord) {
-    return { phonetic: null };
+    return { phonetic: null, suggestedMeaning: null, meaningFr: null, meaningEn: null };
   }
 
-  // 1. Primary: Server-side Gemini endpoint supporting ANY language (French, Spanish, Japanese, German, etc.)
+  // 1. Primary: Server-side Gemini endpoint supporting English & French
   try {
     const res = await fetch('/api/phonetic', {
       method: 'POST',
@@ -33,10 +35,12 @@ export async function fetchPhonetic(
 
     if (res.ok) {
       const data = await res.json();
-      if (data && data.phonetic) {
+      if (data && (data.phonetic || data.suggestedMeaning || data.meaningFr || data.meaningEn)) {
         return {
-          phonetic: data.phonetic,
+          phonetic: data.phonetic || null,
           suggestedMeaning: data.suggestedMeaning || null,
+          meaningFr: data.meaningFr || null,
+          meaningEn: data.meaningEn || null,
           example: data.example || null,
         };
       }
@@ -66,11 +70,17 @@ export async function fetchPhonetic(
           const firstDef = item.meanings[0]?.definitions?.[0];
           if (firstDef) {
             meaning = firstDef.definition || null;
+            if (meaning && typeof meaning === 'string') {
+              meaning = meaning.split(';')[0].split('.')[0].trim();
+              if (meaning.length > 60) {
+                meaning = meaning.slice(0, 57).trim() + '...';
+              }
+            }
             example = firstDef.example || null;
           }
         }
 
-        if (foundPhonetic) {
+        if (foundPhonetic || meaning) {
           return {
             phonetic: foundPhonetic,
             suggestedMeaning: meaning,
@@ -83,5 +93,5 @@ export async function fetchPhonetic(
     console.warn('Public dictionary fallback failed:', dictErr);
   }
 
-  return { phonetic: null };
+  return { phonetic: null, suggestedMeaning: null };
 }

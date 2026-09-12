@@ -38,23 +38,48 @@ async function startServer() {
 
       const langName = language || "English";
       const cleanWord = word.trim();
+      const isFrench =
+        langName.toLowerCase().includes("french") ||
+        langName.toLowerCase().includes("français") ||
+        langName.toLowerCase() === "fr";
 
-      const prompt = `You are a linguistic phonology expert.
-Given the word "${cleanWord}" in the language "${langName}", provide the standard International Phonetic Alphabet (IPA) pronunciation.
-Also provide a short translation/meaning in Portuguese (or English if Portuguese is the target language) and a simple practical example sentence.
+      let prompt = "";
+      if (isFrench) {
+        prompt = `You are an expert French lexicographer and language teacher.
+Given the French word or expression "${cleanWord}":
+1. Provide the standard International Phonetic Alphabet (IPA) transcription enclosed in slashes (e.g. /.../).
+2. Provide a short definition in French ("meaningFr"): a concise, elegant French definition of 3 to 8 words (e.g. for "épanouissement" -> "développement heureux de la personnalité"; for "bonjour" -> "salutation polie pendant la journée").
+3. Provide a short meaning in English ("meaningEn"): a crisp English translation or explanation of 2 to 6 words (e.g. for "épanouissement" -> "fulfillment, flourishing"; for "bonjour" -> "hello, good morning").
+4. Provide one natural, authentic example sentence in French using this word.
 
 Respond ONLY with valid JSON in this exact structure:
 {
   "phonetic": "/.../",
-  "suggestedMeaning": "brief meaning",
-  "example": "example sentence using the word"
+  "meaningFr": "courte définition en français",
+  "meaningEn": "crisp short meaning in English",
+  "example": "phrase d'exemple en français"
 }`;
+      } else {
+        prompt = `You are an expert English lexicographer and language teacher.
+Given the word or expression "${cleanWord}" in ${langName}:
+1. Provide the standard International Phonetic Alphabet (IPA) transcription enclosed in slashes (e.g. /.../).
+2. Provide a concise, clear short meaning in English ("meaningEn"): a crisp English definition or synonyms of 2 to 6 words (e.g. for "serendipity" -> "pleasant surprise by chance"; for "insight" -> "deep intuitive understanding").
+   - IMPORTANT: Only provide the definition in English. Do NOT output any Portuguese or other languages.
+3. Provide one natural, authentic example sentence in ${langName} using this word.
+
+Respond ONLY with valid JSON in this exact structure:
+{
+  "phonetic": "/.../",
+  "meaningEn": "crisp short definition in English (2-6 words)",
+  "example": "natural example sentence"
+}`;
+      }
 
       const ai = getAI();
       let responseText = "";
 
       // Timeout helper
-      const callWithTimeout = async (promise: Promise<any>, ms = 7000) => {
+      const callWithTimeout = async (promise: Promise<any>, ms = 12000) => {
         let timer: any;
         const timeoutPromise = new Promise((_, reject) => {
           timer = setTimeout(() => reject(new Error("Timeout calling AI")), ms);
@@ -65,14 +90,14 @@ Respond ONLY with valid JSON in this exact structure:
       try {
         const response: any = await callWithTimeout(
           ai.models.generateContent({
-            model: "gemini-flash-latest",
+            model: "gemini-3.6-flash",
             contents: prompt,
             config: {
               responseMimeType: "application/json",
               temperature: 0.1,
             },
           }),
-          7000
+          10000
         );
         responseText = response.text?.trim() || "{}";
       } catch (firstErr: any) {
@@ -87,7 +112,7 @@ Respond ONLY with valid JSON in this exact structure:
                 temperature: 0.1,
               },
             }),
-            7000
+            10000
           );
           responseText = fallbackResponse.text?.trim() || "{}";
         } catch (secErr) {
@@ -102,9 +127,18 @@ Respond ONLY with valid JSON in this exact structure:
         phonetic = `/${phonetic}/`;
       }
 
+      const meaningFr = parsed.meaningFr ? String(parsed.meaningFr).trim() : null;
+      const meaningEn = parsed.meaningEn
+        ? String(parsed.meaningEn).trim()
+        : parsed.suggestedMeaning
+        ? String(parsed.suggestedMeaning).trim()
+        : null;
+
       return res.json({
         phonetic: phonetic || null,
-        suggestedMeaning: parsed.suggestedMeaning || null,
+        suggestedMeaning: isFrench ? meaningFr || meaningEn : meaningEn,
+        meaningFr: isFrench ? meaningFr : null,
+        meaningEn: meaningEn,
         example: parsed.example || null,
       });
     } catch (err: any) {
@@ -132,13 +166,22 @@ Respond ONLY with valid JSON in this exact structure:
               const firstDef = entry.meanings[0]?.definitions?.[0];
               if (firstDef) {
                 def = firstDef.definition || null;
+                // Clean and shorten definition to a crisp meaning in English
+                if (def && typeof def === 'string') {
+                  def = def.split(';')[0].split('.')[0].trim();
+                  if (def.length > 60) {
+                    def = def.slice(0, 57).trim() + '...';
+                  }
+                }
                 ex = firstDef.example || null;
               }
             }
-            if (foundPhonetic) {
+            if (foundPhonetic || def) {
               return res.json({
                 phonetic: foundPhonetic,
                 suggestedMeaning: def,
+                meaningFr: null,
+                meaningEn: def,
                 example: ex,
               });
             }
@@ -168,6 +211,8 @@ Respond ONLY with valid JSON in this exact structure:
               return res.json({
                 phonetic: `/${ipa}/`,
                 suggestedMeaning: null,
+                meaningFr: null,
+                meaningEn: null,
                 example: null,
               });
             }
@@ -180,6 +225,8 @@ Respond ONLY with valid JSON in this exact structure:
       return res.json({
         phonetic: null,
         suggestedMeaning: null,
+        meaningFr: null,
+        meaningEn: null,
         example: null,
       });
     }

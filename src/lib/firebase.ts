@@ -169,7 +169,9 @@ export const INITIAL_VOCABULARY: Omit<VocabularyWord, 'id'>[] = [
     languageId: 'fr',
     word: 'Bonjour',
     pronunciation: '/bɔ̃.ʒuʁ/',
-    meaning: 'Good morning, formal or everyday hello',
+    meaning: 'Salutation polie utilisée le matin ou pendant la journée',
+    meaningEn: 'Good morning, formal or everyday hello',
+    example: 'Bonjour tout le monde !',
     createdAt: Date.now() - 86400000,
   },
 ];
