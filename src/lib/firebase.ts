@@ -337,11 +337,13 @@ export async function ensureInitialLanguagesIfEmpty() {
 }
 
 // Database mutation actions with strict error handlers
-export async function addPracticeSession(session: Omit<PracticeSession, 'id'>) {
+export async function addPracticeSession(session: Omit<PracticeSession, 'id'>, customId?: string) {
+  const docRef = customId ? doc(db, 'practice_sessions', customId) : doc(collection(db, 'practice_sessions'));
   try {
-    return await addDoc(collection(db, 'practice_sessions'), session);
+    await setDoc(docRef, session);
+    return docRef;
   } catch (error) {
-    handleFirestoreError(error, OperationType.WRITE, 'practice_sessions');
+    handleFirestoreError(error, OperationType.WRITE, `practice_sessions/${docRef.id}`);
     throw error;
   }
 }
@@ -355,11 +357,13 @@ export async function deletePracticeSession(id: string) {
   }
 }
 
-export async function addGrammarTopic(topic: Omit<GrammarTopic, 'id'>) {
+export async function addGrammarTopic(topic: Omit<GrammarTopic, 'id'>, customId?: string) {
+  const docRef = customId ? doc(db, 'grammar_topics', customId) : doc(collection(db, 'grammar_topics'));
   try {
-    return await addDoc(collection(db, 'grammar_topics'), topic);
+    await setDoc(docRef, topic);
+    return docRef;
   } catch (error) {
-    handleFirestoreError(error, OperationType.WRITE, 'grammar_topics');
+    handleFirestoreError(error, OperationType.WRITE, `grammar_topics/${docRef.id}`);
     throw error;
   }
 }
@@ -382,18 +386,20 @@ export async function deleteGrammarTopic(id: string) {
   }
 }
 
-export async function addVocabularyWord(word: Omit<VocabularyWord, 'id'>) {
+export async function addVocabularyWord(word: Omit<VocabularyWord, 'id'>, customId?: string) {
+  const docRef = customId ? doc(db, 'vocabulary_words', customId) : doc(collection(db, 'vocabulary_words'));
   try {
-    return await addDoc(collection(db, 'vocabulary_words'), word);
+    await setDoc(docRef, word);
+    return docRef;
   } catch (error) {
-    handleFirestoreError(error, OperationType.WRITE, 'vocabulary_words');
+    handleFirestoreError(error, OperationType.WRITE, `vocabulary_words/${docRef.id}`);
     throw error;
   }
 }
 
 export async function updateVocabularyWord(id: string, updates: Partial<VocabularyWord>) {
   try {
-    return await updateDoc(doc(db, 'vocabulary_words', id), updates);
+    await updateDoc(doc(db, 'vocabulary_words', id), updates);
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, `vocabulary_words/${id}`);
     throw error;
@@ -409,11 +415,13 @@ export async function deleteVocabularyWord(id: string) {
   }
 }
 
-export async function addLanguageGoal(goal: Omit<LanguageGoal, 'id'>) {
+export async function addLanguageGoal(goal: Omit<LanguageGoal, 'id'>, customId?: string) {
+  const docRef = customId ? doc(db, 'language_goals', customId) : doc(collection(db, 'language_goals'));
   try {
-    return await addDoc(collection(db, 'language_goals'), goal);
+    await setDoc(docRef, goal);
+    return docRef;
   } catch (error) {
-    handleFirestoreError(error, OperationType.WRITE, 'language_goals');
+    handleFirestoreError(error, OperationType.WRITE, `language_goals/${docRef.id}`);
     throw error;
   }
 }

@@ -82,9 +82,9 @@ export const RitualTimerModal: React.FC = () => {
     setHasFinished(false);
   };
 
-  const handleLogElapsedPractice = async () => {
+  const handleLogElapsedPractice = () => {
     const totalMin = Math.max(1, Math.round(elapsedSeconds / 60) || targetDurationMinutes);
-    await createSession({
+    createSession({
       languageId: selectedLanguage,
       date: new Date().toISOString().split('T')[0],
       listening: selectedSkill === 'listening' ? totalMin : 0,
@@ -94,7 +94,7 @@ export const RitualTimerModal: React.FC = () => {
       totalMinutes: totalMin,
       notes: `Focus ritual practice (${selectedSkill}, ${totalMin}m)`,
       createdAt: Date.now(),
-    });
+    }).catch(console.error);
     setModal(null);
   };
 

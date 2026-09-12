@@ -12,7 +12,7 @@ export const AddLanguageModal: React.FC = () => {
 
   if (modal !== 'addLanguage') return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
@@ -20,7 +20,7 @@ export const AddLanguageModal: React.FC = () => {
     const cleanCode = (code.trim() || name.slice(0, 2)).toUpperCase();
 
     setIsSubmitting(true);
-    await createNewLanguage({
+    createNewLanguage({
       id,
       name: name.trim(),
       code: cleanCode,
@@ -28,9 +28,8 @@ export const AddLanguageModal: React.FC = () => {
       badgeBg: '#F1F5F9',
       badgeText: '#0F172A',
       accentColor: color,
-    });
+    }).catch(console.error);
 
-    setIsSubmitting(false);
     setModal(null);
   };
 

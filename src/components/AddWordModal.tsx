@@ -25,7 +25,7 @@ export const AddWordModal: React.FC = () => {
 
   const selectedLang = languages.find((l) => l.id === languageId) || languages[0];
 
-  // Auto-fetch phonetic when typing word
+  // Auto-fetch phonetic only after user stops typing (1200ms debounce), non-intrusive
   useEffect(() => {
     if (modal !== 'addWord') return;
 
@@ -41,8 +41,8 @@ export const AddWordModal: React.FC = () => {
     }
 
     const timer = setTimeout(async () => {
-      // Only auto-fetch if user hasn't explicitly typed a custom pronunciation
-      if (userEditedPronunciationRef.current && pronunciation.trim()) {
+      // Only auto-fetch if user hasn't explicitly typed pronunciation or meaning
+      if (userEditedPronunciationRef.current || meaning.trim()) {
         return;
       }
 
@@ -53,10 +53,10 @@ export const AddWordModal: React.FC = () => {
           setPronunciation(result.phonetic);
           setIsPhoneticAutoFilled(true);
         }
-        if (result.suggestedMeaning) {
+        if (result.suggestedMeaning && !meaning.trim()) {
           setSuggestedMeaning(result.suggestedMeaning);
         }
-        if (result.example) {
+        if (result.example && !example.trim()) {
           setSuggestedExample(result.example);
         }
       } catch (e) {
@@ -64,10 +64,10 @@ export const AddWordModal: React.FC = () => {
       } finally {
         setIsFetchingPhonetic(false);
       }
-    }, 550);
+    }, 1200);
 
     return () => clearTimeout(timer);
-  }, [word, languageId, modal, selectedLang]);
+  }, [word, languageId, modal, selectedLang, meaning, example]);
 
   // Reset states on modal open
   useEffect(() => {
@@ -134,21 +134,20 @@ export const AddWordModal: React.FC = () => {
     window.speechSynthesis.speak(utterance);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!word.trim() || !meaning.trim()) return;
 
     setIsSubmitting(true);
-    await createWord({
+    createWord({
       languageId,
       word: word.trim(),
       pronunciation: pronunciation.trim() || undefined,
       meaning: meaning.trim(),
       example: example.trim() || undefined,
       createdAt: Date.now(),
-    });
+    }).catch(console.error);
 
-    setIsSubmitting(false);
     setModal(null);
   };
 

@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
+import { doc, collection } from 'firebase/firestore';
 import type { Language, PracticeSession, GrammarTopic, VocabularyWord, LanguageGoal } from '../types';
 import {
+  db,
   subscribeToCollection,
   ensureInitialLanguagesIfEmpty,
   testFirestoreConnection,
@@ -145,16 +147,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     async function init() {
       try {
-        // First, check live Firestore connectivity
-        const testRes = await testFirestoreConnection();
-        if (testRes.success) {
-          setConnectionLatency(testRes.latencyMs);
-        }
-
-        // Ensure baseline languages exist in Firestore if collection is empty
-        await ensureInitialLanguagesIfEmpty();
-
-        // 1. Languages
+        // 1. Languages - subscribe immediately for instantaneous hydration
         const unsubLang = subscribeToCollection<Language>(
           'languages',
           (data) => {
@@ -208,6 +201,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         );
 
         unsubs = [unsubLang, unsubSessions, unsubGrammar, unsubVocab, unsubGoals];
+
+        // Non-blocking background verification
+        ensureInitialLanguagesIfEmpty().catch(console.warn);
+        testFirestoreConnection().then((testRes) => {
+          if (testRes.success) {
+            setConnectionLatency(testRes.latencyMs);
+          }
+        }).catch(console.warn);
       } catch (e) {
         console.warn('Firebase connection note:', e);
         setSyncStatus('connected');
@@ -336,21 +337,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return sessions.filter((s) => isDateInCurrentWeek(s.date)).reduce((acc, s) => acc + (s.totalMinutes || 0), 0);
   }, [sessions]);
 
-  // Database Mutation Actions with direct Firestore synchronization
+  // Database Mutation Actions with direct Firestore synchronization and instant optimistic updates
   const createSession = async (session: Omit<PracticeSession, 'id'>) => {
-    try {
-      const docRef = await addPracticeSession(session);
-      if (docRef?.id) {
-        const newSession: PracticeSession = { ...session, id: docRef.id };
-        setSessions((prev) => {
-          if (prev.some((s) => s.id === docRef.id)) return prev;
-          return [newSession, ...prev];
-        });
-      }
-    } catch (e) {
+    // Generate valid Firestore document ID synchronously in memory (< 1ms)
+    const docRef = doc(collection(db, 'practice_sessions'));
+    const newSession: PracticeSession = { ...session, id: docRef.id };
+
+    // Instant local UI update
+    setSessions((prev) => [newSession, ...prev]);
+
+    // Persist to Firestore in background without blocking UI
+    addPracticeSession(session, docRef.id).catch((e) => {
       console.error('Error adding practice session:', e);
-      throw e;
-    }
+      // Revert if write fails
+      setSessions((prev) => prev.filter((s) => s.id !== docRef.id));
+    });
+
+    return docRef;
   };
 
   const removeSession = async (id: string) => {
@@ -363,19 +366,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const createGrammar = async (topic: Omit<GrammarTopic, 'id'>) => {
-    try {
-      const docRef = await addGrammarTopic(topic);
-      if (docRef?.id) {
-        const newTopic: GrammarTopic = { ...topic, id: docRef.id };
-        setGrammar((prev) => {
-          if (prev.some((g) => g.id === docRef.id)) return prev;
-          return [newTopic, ...prev];
-        });
-      }
-    } catch (e) {
+    const docRef = doc(collection(db, 'grammar_topics'));
+    const newTopic: GrammarTopic = { ...topic, id: docRef.id };
+
+    setGrammar((prev) => [newTopic, ...prev]);
+
+    addGrammarTopic(topic, docRef.id).catch((e) => {
       console.error('Error adding grammar topic:', e);
-      throw e;
-    }
+      setGrammar((prev) => prev.filter((g) => g.id !== docRef.id));
+    });
+
+    return docRef;
   };
 
   const editGrammar = async (id: string, updates: Partial<GrammarTopic>) => {
@@ -397,19 +398,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const createWord = async (word: Omit<VocabularyWord, 'id'>) => {
-    try {
-      const docRef = await addVocabularyWord(word);
-      if (docRef?.id) {
-        const newWord: VocabularyWord = { ...word, id: docRef.id };
-        setVocabulary((prev) => {
-          if (prev.some((w) => w.id === docRef.id)) return prev;
-          return [newWord, ...prev];
-        });
-      }
-    } catch (e) {
+    const docRef = doc(collection(db, 'vocabulary_words'));
+    const newWord: VocabularyWord = { ...word, id: docRef.id };
+
+    setVocabulary((prev) => [newWord, ...prev]);
+
+    addVocabularyWord(word, docRef.id).catch((e) => {
       console.error('Error adding word:', e);
-      throw e;
-    }
+      setVocabulary((prev) => prev.filter((w) => w.id !== docRef.id));
+    });
+
+    return docRef;
   };
 
   const editWord = async (id: string, updates: Partial<VocabularyWord>) => {
@@ -431,19 +430,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const createGoal = async (goal: Omit<LanguageGoal, 'id'>) => {
-    try {
-      const docRef = await addLanguageGoal(goal);
-      if (docRef?.id) {
-        const newGoal: LanguageGoal = { ...goal, id: docRef.id };
-        setGoals((prev) => {
-          if (prev.some((g) => g.id === docRef.id)) return prev;
-          return [newGoal, ...prev];
-        });
-      }
-    } catch (e) {
+    const docRef = doc(collection(db, 'language_goals'));
+    const newGoal: LanguageGoal = { ...goal, id: docRef.id };
+
+    setGoals((prev) => [newGoal, ...prev]);
+
+    addLanguageGoal(goal, docRef.id).catch((e) => {
       console.error('Error adding goal:', e);
-      throw e;
-    }
+      setGoals((prev) => prev.filter((g) => g.id !== docRef.id));
+    });
+
+    return docRef;
   };
 
   const editGoal = async (id: string, updates: Partial<LanguageGoal>) => {

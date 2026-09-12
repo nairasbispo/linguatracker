@@ -29,7 +29,7 @@ export const LogSessionModal: React.FC = () => {
     }
 
     setIsSubmitting(true);
-    await createSession({
+    createSession({
       languageId,
       date,
       listening: Number(listening || 0),
@@ -39,7 +39,7 @@ export const LogSessionModal: React.FC = () => {
       totalMinutes: totalMin,
       notes: notes.trim() || undefined,
       createdAt: Date.now(),
-    });
+    }).catch(console.error);
 
     try {
       confetti({
@@ -51,7 +51,6 @@ export const LogSessionModal: React.FC = () => {
       // non-critical
     }
 
-    setIsSubmitting(false);
     setModal(null);
   };
 

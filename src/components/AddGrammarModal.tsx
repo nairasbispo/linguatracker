@@ -17,12 +17,12 @@ export const AddGrammarModal: React.FC = () => {
 
   if (modal !== 'addGrammar') return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
 
     setIsSubmitting(true);
-    await createGrammar({
+    createGrammar({
       languageId,
       title: title.trim(),
       status,
@@ -30,9 +30,8 @@ export const AddGrammarModal: React.FC = () => {
       notes: notes.trim() || undefined,
       createdAt: Date.now(),
       updatedAt: Date.now(),
-    });
+    }).catch(console.error);
 
-    setIsSubmitting(false);
     setModal(null);
   };
 
