@@ -113,7 +113,7 @@ export const RitualTimerModal: React.FC = () => {
     >
       <div
         id="modal-ritual-timer"
-        className="bg-[#161B26] text-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-[#2B354D] relative flex flex-col items-center text-center"
+        className="bg-[#161B26] text-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 max-w-md w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-[#2B354D] relative flex flex-col items-center text-center"
       >
         {/* Close Button */}
         <button

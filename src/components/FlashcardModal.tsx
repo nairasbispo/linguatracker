@@ -57,7 +57,7 @@ export const FlashcardModal: React.FC = () => {
     >
       <div
         id="modal-flashcards"
-        className="bg-white rounded-3xl p-7 max-w-md w-full shadow-2xl border border-slate-200 relative flex flex-col items-center"
+        className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-7 max-w-md w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-slate-200 relative flex flex-col items-center"
       >
         <button
           onClick={() => setModal(null)}

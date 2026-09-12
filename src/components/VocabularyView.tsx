@@ -46,30 +46,30 @@ export const VocabularyView: React.FC = () => {
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
             <span>WORDS WORTH KEEPING</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-[#141A26] tracking-tight">
+          <h1 className="text-2xl sm:text-4xl font-extrabold text-[#141A26] tracking-tight">
             Build your word shelf.
           </h1>
-          <p className="text-sm text-slate-500 mt-1.5 font-normal max-w-xl">
+          <p className="text-xs sm:text-sm text-slate-500 mt-1.5 font-normal max-w-xl">
             Save the words you want to remember and keep their pronunciation close at hand.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
           {filteredVocab.length > 0 && (
             <button
               id="vocab-flashcards-btn"
               onClick={() => setModal('flashcards')}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-white hover:bg-slate-50 text-slate-700 border border-[#D5CEBF] text-sm font-semibold shadow-2xs transition-all active:scale-95"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-white hover:bg-slate-50 text-slate-700 border border-[#D5CEBF] text-sm font-semibold shadow-2xs transition-all active:scale-95 flex-1 sm:flex-initial"
             >
               <Layers className="w-4 h-4 text-purple-600" />
-              <span>Practice flashcards</span>
+              <span>Flashcards</span>
             </button>
           )}
 
           <button
             id="vocab-add-word-btn"
             onClick={() => setModal('addWord')}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#1E5E44] hover:bg-[#184E38] text-white text-sm font-semibold shadow-sm transition-all transform active:scale-95 shrink-0"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[#1E5E44] hover:bg-[#184E38] text-white text-sm font-semibold shadow-sm transition-all transform active:scale-95 shrink-0 flex-1 sm:flex-initial"
           >
             <Plus className="w-4 h-4" />
             <span>Add word</span>

@@ -51,10 +51,10 @@ export const GrammarView: React.FC = () => {
             <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
             <span>LANGUAGE MECHANICS</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-[#141A26] tracking-tight">
+          <h1 className="text-2xl sm:text-4xl font-extrabold text-[#141A26] tracking-tight">
             Grammar, in progress.
           </h1>
-          <p className="text-sm text-slate-500 mt-1.5 font-normal max-w-xl">
+          <p className="text-xs sm:text-sm text-slate-500 mt-1.5 font-normal max-w-xl">
             Keep the rules you are learning visible. Confidence grows faster when you can see the pieces click into place.
           </p>
         </div>
@@ -62,7 +62,7 @@ export const GrammarView: React.FC = () => {
         <button
           id="grammar-add-topic-btn"
           onClick={() => setModal('addGrammar')}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#1E5E44] hover:bg-[#184E38] text-white text-sm font-semibold shadow-sm transition-all transform active:scale-95 shrink-0"
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[#1E5E44] hover:bg-[#184E38] text-white text-sm font-semibold shadow-sm transition-all transform active:scale-95 shrink-0 w-full sm:w-auto"
         >
           <Plus className="w-4 h-4" />
           <span>Add topic</span>

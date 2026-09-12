@@ -41,7 +41,7 @@ export const AddLanguageModal: React.FC = () => {
     >
       <div
         id="modal-add-language"
-        className="bg-white rounded-3xl p-7 max-w-sm w-full shadow-2xl border border-slate-200 relative"
+        className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-7 max-w-sm w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-slate-200 relative"
       >
         <div className="flex items-start justify-between mb-5">
           <div>

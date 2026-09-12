@@ -41,7 +41,7 @@ export const AddGoalModal: React.FC = () => {
     >
       <div
         id="modal-add-goal"
-        className="bg-white rounded-3xl p-7 max-w-lg w-full shadow-2xl border border-slate-200/80 relative"
+        className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-7 max-w-lg w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-slate-200/80 relative"
       >
         <div className="flex items-start justify-between mb-5">
           <div>

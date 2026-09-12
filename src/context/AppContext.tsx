@@ -35,6 +35,8 @@ interface AppContextType {
   setModal: (modal: string | null) => void;
   selectedLanguageForModal?: string;
   setSelectedLanguageForModal: (langId: string | undefined) => void;
+  isMobileNavOpen: boolean;
+  setIsMobileNavOpen: (open: boolean) => void;
   
   // Actions
   createSession: (session: Omit<PracticeSession, 'id'>) => Promise<void>;
@@ -87,10 +89,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return INITIAL_GOALS.map((gl, idx) => ({ ...gl, id: `seed-goal-${idx}` }));
   });
 
-  const [activeTab, setActiveTab] = useState<string>('overview');
+  const [activeTab, setActiveTabState] = useState<string>('overview');
   const [syncStatus, setSyncStatus] = useState<'connected' | 'syncing' | 'offline'>('syncing');
-  const [modal, setModal] = useState<string | null>(null);
+  const [modal, setModalState] = useState<string | null>(null);
   const [selectedLanguageForModal, setSelectedLanguageForModal] = useState<string | undefined>(undefined);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState<boolean>(false);
+
+  const setActiveTab = (tab: string) => {
+    setActiveTabState(tab);
+    setIsMobileNavOpen(false);
+  };
+
+  const setModal = (m: string | null) => {
+    setModalState(m);
+    if (m) setIsMobileNavOpen(false);
+  };
 
   // Initialize Firebase subscriptions and seeding
   useEffect(() => {
@@ -387,6 +400,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setModal,
         selectedLanguageForModal,
         setSelectedLanguageForModal,
+        isMobileNavOpen,
+        setIsMobileNavOpen,
         createSession,
         removeSession,
         createGrammar,

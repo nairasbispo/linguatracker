@@ -60,10 +60,10 @@ export const OverviewView: React.FC = () => {
             <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
             <span>{dayName}, YOUR PACE IS YOURS</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-[#141A26] tracking-tight">
+          <h1 className="text-2xl sm:text-4xl font-extrabold text-[#141A26] tracking-tight">
             Keep the thread going.
           </h1>
-          <p className="text-sm text-slate-500 mt-1.5 font-normal">
+          <p className="text-xs sm:text-sm text-slate-500 mt-1.5 font-normal">
             A clear view of the small sessions that are becoming a real language practice.
           </p>
         </div>
@@ -71,7 +71,7 @@ export const OverviewView: React.FC = () => {
         <button
           id="overview-log-session-btn"
           onClick={handleOpenLog}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#1E5E44] hover:bg-[#184E38] text-white text-sm font-semibold shadow-sm transition-all transform active:scale-95 shrink-0"
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[#1E5E44] hover:bg-[#184E38] text-white text-sm font-semibold shadow-sm transition-all transform active:scale-95 shrink-0 w-full sm:w-auto"
         >
           <Plus className="w-4 h-4" />
           <span>Log a session</span>
@@ -255,8 +255,8 @@ export const OverviewView: React.FC = () => {
       </div>
 
       {/* Non-AI Innovation: 30-Day Consistency Heatmap */}
-      <div className="bg-white rounded-2xl p-6 border border-[#E9E4D9] shadow-2xs">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-white rounded-2xl p-4 sm:p-6 border border-[#E9E4D9] shadow-2xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
           <div>
             <div className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">
               CONSISTENCY CALENDAR
@@ -275,23 +275,25 @@ export const OverviewView: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-10 sm:grid-cols-15 md:grid-cols-30 gap-1.5">
-          {activityDays.map((item) => {
-            let bgClass = 'bg-[#EAE5DA]';
-            if (item.minutes > 60) bgClass = 'bg-[#1E5E44] text-white';
-            else if (item.minutes > 30) bgClass = 'bg-emerald-500 text-white';
-            else if (item.minutes > 0) bgClass = 'bg-emerald-200 text-emerald-900';
+        <div className="overflow-x-auto pb-1">
+          <div className="grid grid-cols-10 sm:grid-cols-15 md:grid-cols-30 gap-1 sm:gap-1.5 min-w-[270px]">
+            {activityDays.map((item) => {
+              let bgClass = 'bg-[#EAE5DA]';
+              if (item.minutes > 60) bgClass = 'bg-[#1E5E44] text-white';
+              else if (item.minutes > 30) bgClass = 'bg-emerald-500 text-white';
+              else if (item.minutes > 0) bgClass = 'bg-emerald-200 text-emerald-900';
 
-            return (
-              <div
-                key={item.date}
-                className={`h-9 rounded-md flex flex-col items-center justify-center text-[10px] font-medium transition-transform hover:scale-110 cursor-pointer ${bgClass}`}
-                title={`${item.date}: ${item.minutes} minutes`}
-              >
-                <span>{item.dayNum}</span>
-              </div>
-            );
-          })}
+              return (
+                <div
+                  key={item.date}
+                  className={`h-7 sm:h-9 rounded-md flex flex-col items-center justify-center text-[9px] sm:text-[10px] font-medium transition-transform hover:scale-110 cursor-pointer ${bgClass}`}
+                  title={`${item.date}: ${item.minutes} minutes`}
+                >
+                  <span>{item.dayNum}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 

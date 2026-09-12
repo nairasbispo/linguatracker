@@ -8,34 +8,60 @@ import {
   ChevronRight,
   Plus,
   Timer,
+  X,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export const Sidebar: React.FC = () => {
-  const { languages, activeTab, setActiveTab, setModal, todayMinutes } = useApp();
+  const {
+    languages,
+    activeTab,
+    setActiveTab,
+    setModal,
+    todayMinutes,
+    isMobileNavOpen,
+    setIsMobileNavOpen,
+  } = useApp();
 
   const ritualProgress = Math.min(100, Math.round((todayMinutes / 10) * 100));
 
-  return (
-    <aside
-      id="sidebar-container"
-      className="w-64 bg-[#161B26] text-slate-200 flex flex-col justify-between shrink-0 min-h-screen border-r border-[#202736] select-none"
-    >
+  const renderSidebarContent = (isMobile: boolean = false) => (
+    <div className="flex flex-col justify-between h-full min-h-full">
       {/* Top Header & Logo */}
       <div className="p-5">
-        <div id="app-brand-logo" className="flex items-center gap-3 mb-8 cursor-pointer" onClick={() => setActiveTab('overview')}>
-          <div className="w-10 h-10 rounded-xl bg-[#1E5E44] flex items-center justify-center text-white font-bold text-lg shadow-sm border border-emerald-600/40 relative">
-            <span>L</span>
-            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-300 ring-2 ring-[#161B26]"></span>
-          </div>
-          <div>
-            <div className="text-white font-bold text-base tracking-tight flex items-center gap-1.5">
-              LinguaTrack
+        <div className="flex items-center justify-between mb-7">
+          <div
+            id={isMobile ? 'app-brand-logo-mobile' : 'app-brand-logo'}
+            className="flex items-center gap-3 cursor-pointer"
+            onClick={() => {
+              setActiveTab('overview');
+              if (isMobile) setIsMobileNavOpen(false);
+            }}
+          >
+            <div className="w-10 h-10 rounded-xl bg-[#1E5E44] flex items-center justify-center text-white font-bold text-lg shadow-sm border border-emerald-600/40 relative">
+              <span>L</span>
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-300 ring-2 ring-[#161B26]"></span>
             </div>
-            <div className="text-[10px] tracking-wider text-slate-400 font-semibold uppercase">
-              DAILY PRACTICE
+            <div>
+              <div className="text-white font-bold text-base tracking-tight flex items-center gap-1.5">
+                LinguaTrack
+              </div>
+              <div className="text-[10px] tracking-wider text-slate-400 font-semibold uppercase">
+                DAILY PRACTICE
+              </div>
             </div>
           </div>
+
+          {isMobile && (
+            <button
+              id="close-mobile-nav-btn"
+              onClick={() => setIsMobileNavOpen(false)}
+              className="p-2 text-slate-400 hover:text-white hover:bg-[#1C2333] rounded-xl transition-colors"
+              aria-label="Close navigation"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
         {/* Section: Your Workspace */}
@@ -46,9 +72,12 @@ export const Sidebar: React.FC = () => {
           <nav className="space-y-1">
             {/* Overview */}
             <button
-              id="nav-overview"
-              onClick={() => setActiveTab('overview')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+              id={isMobile ? 'nav-overview-mobile' : 'nav-overview'}
+              onClick={() => {
+                setActiveTab('overview');
+                if (isMobile) setIsMobileNavOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                 activeTab === 'overview'
                   ? 'bg-[#222B3D] text-white shadow-sm'
                   : 'text-slate-300 hover:text-white hover:bg-[#1C2333]'
@@ -67,9 +96,12 @@ export const Sidebar: React.FC = () => {
               return (
                 <button
                   key={lang.id}
-                  id={`nav-language-${lang.id}`}
-                  onClick={() => setActiveTab(lang.id)}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                  id={isMobile ? `nav-language-mobile-${lang.id}` : `nav-language-${lang.id}`}
+                  onClick={() => {
+                    setActiveTab(lang.id);
+                    if (isMobile) setIsMobileNavOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                     isActive
                       ? 'bg-[#222B3D] text-white shadow-sm'
                       : 'text-slate-300 hover:text-white hover:bg-[#1C2333]'
@@ -86,9 +118,12 @@ export const Sidebar: React.FC = () => {
 
             {/* Add Language Button */}
             <button
-              id="nav-add-language-btn"
-              onClick={() => setModal('addLanguage')}
-              className="w-full flex items-center gap-3 px-3 py-1.5 rounded-xl text-xs font-medium text-slate-400 hover:text-emerald-400 hover:bg-[#1C2333] transition-all"
+              id={isMobile ? 'nav-add-language-btn-mobile' : 'nav-add-language-btn'}
+              onClick={() => {
+                setModal('addLanguage');
+                if (isMobile) setIsMobileNavOpen(false);
+              }}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-emerald-400 hover:bg-[#1C2333] transition-all"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Add language</span>
@@ -96,9 +131,12 @@ export const Sidebar: React.FC = () => {
 
             {/* Grammar */}
             <button
-              id="nav-grammar"
-              onClick={() => setActiveTab('grammar')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+              id={isMobile ? 'nav-grammar-mobile' : 'nav-grammar'}
+              onClick={() => {
+                setActiveTab('grammar');
+                if (isMobile) setIsMobileNavOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                 activeTab === 'grammar'
                   ? 'bg-[#222B3D] text-white shadow-sm'
                   : 'text-slate-300 hover:text-white hover:bg-[#1C2333]'
@@ -113,9 +151,12 @@ export const Sidebar: React.FC = () => {
 
             {/* Vocabulary */}
             <button
-              id="nav-vocabulary"
-              onClick={() => setActiveTab('vocabulary')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+              id={isMobile ? 'nav-vocabulary-mobile' : 'nav-vocabulary'}
+              onClick={() => {
+                setActiveTab('vocabulary');
+                if (isMobile) setIsMobileNavOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                 activeTab === 'vocabulary'
                   ? 'bg-[#222B3D] text-white shadow-sm'
                   : 'text-slate-300 hover:text-white hover:bg-[#1C2333]'
@@ -130,9 +171,12 @@ export const Sidebar: React.FC = () => {
 
             {/* Goals */}
             <button
-              id="nav-goals"
-              onClick={() => setActiveTab('goals')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+              id={isMobile ? 'nav-goals-mobile' : 'nav-goals'}
+              onClick={() => {
+                setActiveTab('goals');
+                if (isMobile) setIsMobileNavOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                 activeTab === 'goals'
                   ? 'bg-[#222B3D] text-white shadow-sm'
                   : 'text-slate-300 hover:text-white hover:bg-[#1C2333]'
@@ -149,10 +193,13 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Bottom Section: A SMALL RITUAL */}
-      <div className="p-4 border-t border-[#202736]">
+      <div className="p-4 border-t border-[#202736] pb-8 md:pb-4">
         <div
-          id="small-ritual-card"
-          onClick={() => setModal('ritualTimer')}
+          id={isMobile ? 'small-ritual-card-mobile' : 'small-ritual-card'}
+          onClick={() => {
+            setModal('ritualTimer');
+            if (isMobile) setIsMobileNavOpen(false);
+          }}
           className="bg-[#1C2333] hover:bg-[#222B3D] cursor-pointer rounded-2xl p-4 border border-[#2B354D] transition-all group shadow-sm"
           title="Click to open the 10-minute Ritual Focus Timer"
         >
@@ -186,6 +233,35 @@ export const Sidebar: React.FC = () => {
           </span>
         </div>
       </div>
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop Persistent Sidebar (md and above) */}
+      <aside
+        id="sidebar-container"
+        className="hidden md:flex w-64 bg-[#161B26] text-slate-200 flex-col justify-between shrink-0 h-screen border-r border-[#202736] select-none overflow-y-auto"
+      >
+        {renderSidebarContent(false)}
+      </aside>
+
+      {/* Mobile Off-canvas Drawer (< md) */}
+      {isMobileNavOpen && (
+        <div
+          id="mobile-nav-backdrop"
+          className="fixed inset-0 z-50 md:hidden bg-slate-950/70 backdrop-blur-xs flex animate-in fade-in duration-200"
+          onClick={() => setIsMobileNavOpen(false)}
+        >
+          <aside
+            id="mobile-nav-drawer"
+            className="w-72 max-w-[85vw] bg-[#161B26] text-slate-200 flex flex-col justify-between h-full border-r border-[#202736] shadow-2xl overflow-y-auto animate-in slide-in-from-left duration-250"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {renderSidebarContent(true)}
+          </aside>
+        </div>
+      )}
+    </>
   );
 };
