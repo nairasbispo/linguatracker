@@ -3,6 +3,11 @@ import type { Language, PracticeSession, GrammarTopic, VocabularyWord, LanguageG
 import {
   subscribeToCollection,
   seedInitialDataIfEmpty,
+  testFirestoreConnection,
+  signInWithGoogle,
+  logoutUser,
+  onAuthStateChanged,
+  User,
   DEFAULT_LANGUAGES,
   INITIAL_SESSIONS,
   INITIAL_GRAMMAR,
@@ -37,7 +42,15 @@ interface AppContextType {
   setSelectedLanguageForModal: (langId: string | undefined) => void;
   isMobileNavOpen: boolean;
   setIsMobileNavOpen: (open: boolean) => void;
-  
+
+  // Firebase Auth & Diagnostics
+  user: User | null;
+  isAuthLoading: boolean;
+  loginWithGoogle: () => Promise<void>;
+  logout: () => Promise<void>;
+  connectionLatency: number | null;
+  testConnectionNow: () => Promise<{ success: boolean; latencyMs: number; error?: string }>;
+
   // Actions
   createSession: (session: Omit<PracticeSession, 'id'>) => Promise<void>;
   removeSession: (id: string) => Promise<void>;
@@ -95,6 +108,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [selectedLanguageForModal, setSelectedLanguageForModal] = useState<string | undefined>(undefined);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState<boolean>(false);
 
+  // Auth & Connection State
+  const [user, setUser] = useState<User | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState<boolean>(true);
+  const [connectionLatency, setConnectionLatency] = useState<number | null>(null);
+
   const setActiveTab = (tab: string) => {
     setActiveTabState(tab);
     setIsMobileNavOpen(false);
@@ -105,41 +123,101 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (m) setIsMobileNavOpen(false);
   };
 
-  // Initialize Firebase subscriptions and seeding
+  // Test Firestore Connection
+  const testConnectionNow = async () => {
+    try {
+      const res = await testFirestoreConnection();
+      if (res.success) {
+        setConnectionLatency(res.latencyMs);
+        setSyncStatus('connected');
+      } else {
+        setSyncStatus('offline');
+      }
+      return res;
+    } catch (err) {
+      setSyncStatus('offline');
+      return { success: false, latencyMs: 0, error: String(err) };
+    }
+  };
+
+  // Setup Auth Listener
+  useEffect(() => {
+    import('../lib/firebase').then(({ auth }) => {
+      const unsubAuth = onAuthStateChanged(auth, (currentUser) => {
+        setUser(currentUser);
+        setIsAuthLoading(false);
+      });
+      return () => unsubAuth();
+    });
+  }, []);
+
+  // Initialize Firebase subscriptions, test connection, and seed initial data
   useEffect(() => {
     let unsubs: (() => void)[] = [];
 
     async function init() {
       try {
+        // First, check live Firestore connectivity
+        const testRes = await testFirestoreConnection();
+        if (testRes.success) {
+          setConnectionLatency(testRes.latencyMs);
+        }
+
+        // Seed initial data if database is empty
         await seedInitialDataIfEmpty();
 
-        const unsubLang = subscribeToCollection<Language>('languages', (data) => {
-          if (data.length > 0) setLanguages(data);
-          setSyncStatus('connected');
-        });
+        // 1. Languages
+        const unsubLang = subscribeToCollection<Language>(
+          'languages',
+          (data) => {
+            if (data.length > 0) setLanguages(data);
+            setSyncStatus('connected');
+          },
+          () => setSyncStatus('offline')
+        );
 
-        const unsubSessions = subscribeToCollection<PracticeSession>('practice_sessions', (data) => {
-          data.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-          setSessions(data);
-          setSyncStatus('connected');
-        });
+        // 2. Practice Sessions
+        const unsubSessions = subscribeToCollection<PracticeSession>(
+          'practice_sessions',
+          (data) => {
+            data.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            setSessions(data);
+            setSyncStatus('connected');
+          },
+          () => setSyncStatus('offline')
+        );
 
-        const unsubGrammar = subscribeToCollection<GrammarTopic>('grammar_topics', (data) => {
-          data.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-          setGrammar(data);
-          setSyncStatus('connected');
-        });
+        // 3. Grammar Topics
+        const unsubGrammar = subscribeToCollection<GrammarTopic>(
+          'grammar_topics',
+          (data) => {
+            data.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+            setGrammar(data);
+            setSyncStatus('connected');
+          },
+          () => setSyncStatus('offline')
+        );
 
-        const unsubVocab = subscribeToCollection<VocabularyWord>('vocabulary_words', (data) => {
-          data.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-          setVocabulary(data);
-          setSyncStatus('connected');
-        });
+        // 4. Vocabulary Words
+        const unsubVocab = subscribeToCollection<VocabularyWord>(
+          'vocabulary_words',
+          (data) => {
+            data.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            setVocabulary(data);
+            setSyncStatus('connected');
+          },
+          () => setSyncStatus('offline')
+        );
 
-        const unsubGoals = subscribeToCollection<LanguageGoal>('language_goals', (data) => {
-          setGoals(data);
-          setSyncStatus('connected');
-        });
+        // 5. Goals
+        const unsubGoals = subscribeToCollection<LanguageGoal>(
+          'language_goals',
+          (data) => {
+            setGoals(data);
+            setSyncStatus('connected');
+          },
+          () => setSyncStatus('offline')
+        );
 
         unsubs = [unsubLang, unsubSessions, unsubGrammar, unsubVocab, unsubGoals];
       } catch (e) {
@@ -154,6 +232,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubs.forEach((unsub) => unsub && unsub());
     };
   }, []);
+
+  // Auth actions
+  const loginWithGoogle = async () => {
+    setIsAuthLoading(true);
+    try {
+      const u = await signInWithGoogle();
+      setUser(u);
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
+
+  const logout = async () => {
+    setIsAuthLoading(true);
+    try {
+      await logoutUser();
+      setUser(null);
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
 
   // Helper date functions
   const isDateInCurrentWeek = (dateStr: string) => {
@@ -249,15 +348,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return sessions.filter((s) => isDateInCurrentWeek(s.date)).reduce((acc, s) => acc + (s.totalMinutes || 0), 0);
   }, [sessions]);
 
-  // Actions
+  // Database Mutation Actions with immediate ID alignment
   const createSession = async (session: Omit<PracticeSession, 'id'>) => {
-    // Optimistic update
     const tempId = `temp-${Date.now()}`;
     const newSession: PracticeSession = { ...session, id: tempId };
     setSessions((prev) => [newSession, ...prev]);
 
     try {
-      await addPracticeSession(session);
+      const docRef = await addPracticeSession(session);
+      if (docRef?.id) {
+        setSessions((prev) => prev.map((s) => (s.id === tempId ? { ...s, id: docRef.id } : s)));
+      }
     } catch (e) {
       console.error('Error adding practice session:', e);
     }
@@ -280,7 +381,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setGrammar((prev) => [newTopic, ...prev]);
 
     try {
-      await addGrammarTopic(topic);
+      const docRef = await addGrammarTopic(topic);
+      if (docRef?.id) {
+        setGrammar((prev) => prev.map((g) => (g.id === tempId ? { ...g, id: docRef.id } : g)));
+      }
     } catch (e) {
       console.error('Error adding grammar topic:', e);
     }
@@ -314,7 +418,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setVocabulary((prev) => [newWord, ...prev]);
 
     try {
-      await addVocabularyWord(word);
+      const docRef = await addVocabularyWord(word);
+      if (docRef?.id) {
+        setVocabulary((prev) => prev.map((w) => (w.id === tempId ? { ...w, id: docRef.id } : w)));
+      }
     } catch (e) {
       console.error('Error adding word:', e);
     }
@@ -348,7 +455,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setGoals((prev) => [newGoal, ...prev]);
 
     try {
-      await addLanguageGoal(goal);
+      const docRef = await addLanguageGoal(goal);
+      if (docRef?.id) {
+        setGoals((prev) => prev.map((gl) => (gl.id === tempId ? { ...gl, id: docRef.id } : gl)));
+      }
     } catch (e) {
       console.error('Error adding goal:', e);
     }
@@ -402,6 +512,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSelectedLanguageForModal,
         isMobileNavOpen,
         setIsMobileNavOpen,
+        user,
+        isAuthLoading,
+        loginWithGoogle,
+        logout,
+        connectionLatency,
+        testConnectionNow,
         createSession,
         removeSession,
         createGrammar,

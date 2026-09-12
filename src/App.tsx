@@ -14,6 +14,7 @@ import { AddGoalModal } from './components/AddGoalModal';
 import { RitualTimerModal } from './components/RitualTimerModal';
 import { FlashcardModal } from './components/FlashcardModal';
 import { AddLanguageModal } from './components/AddLanguageModal';
+import { FirebaseStatusModal } from './components/FirebaseStatusModal';
 import { MobileBottomNav } from './components/MobileBottomNav';
 
 const MainContent: React.FC = () => {
@@ -55,6 +56,7 @@ export default function App() {
         <RitualTimerModal />
         <FlashcardModal />
         <AddLanguageModal />
+        <FirebaseStatusModal />
       </div>
     </AppProvider>
   );

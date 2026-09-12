@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { Menu, CheckCircle2, RefreshCw, Plus } from 'lucide-react';
+import {
+  Menu,
+  CheckCircle2,
+  RefreshCw,
+  Plus,
+  AlertCircle,
+  Database,
+  LogIn,
+} from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export const Header: React.FC = () => {
@@ -12,12 +20,20 @@ export const Header: React.FC = () => {
     setModal,
     setSelectedLanguageForModal,
     languages,
+    user,
+    connectionLatency,
   } = useApp();
+
   const [showStatusTooltip, setShowStatusTooltip] = useState(false);
 
   const handleQuickLog = () => {
     setSelectedLanguageForModal(languages[0]?.id || 'en');
     setModal('logSession');
+  };
+
+  const openStatusModal = () => {
+    setShowStatusTooltip(false);
+    setModal('firebase-status');
   };
 
   return (
@@ -54,47 +70,79 @@ export const Header: React.FC = () => {
       </div>
 
       {/* Right User & Cloud Sync Info */}
-      <div className="flex items-center gap-2.5 sm:gap-4">
+      <div className="flex items-center gap-2 sm:gap-3.5">
         {/* Real-time Firebase Sync Pill */}
         <div
           className="relative"
           onMouseEnter={() => setShowStatusTooltip(true)}
           onMouseLeave={() => setShowStatusTooltip(false)}
-          onClick={() => setShowStatusTooltip((prev) => !prev)}
         >
-          <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-xs font-medium cursor-pointer shadow-2xs">
+          <button
+            id="firebase-status-pill-btn"
+            onClick={openStatusModal}
+            className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 rounded-full border text-xs font-medium cursor-pointer shadow-2xs transition-all hover:scale-[1.02] active:scale-98 ${
+              syncStatus === 'connected'
+                ? 'bg-emerald-50 border-emerald-200/80 text-emerald-800'
+                : syncStatus === 'syncing'
+                ? 'bg-amber-50 border-amber-200 text-amber-800'
+                : 'bg-rose-50 border-rose-200 text-rose-800'
+            }`}
+          >
             {syncStatus === 'syncing' ? (
-              <RefreshCw className="w-3 h-3 animate-spin text-emerald-600" />
-            ) : (
+              <RefreshCw className="w-3 h-3 animate-spin text-amber-600" />
+            ) : syncStatus === 'connected' ? (
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
+            ) : (
+              <AlertCircle className="w-3 h-3 text-rose-500" />
             )}
-            <span className="text-[11px] tracking-wide font-semibold text-emerald-900 hidden xs:inline">
+            <span className="text-[11px] tracking-wide font-semibold hidden xs:inline">
               Firebase Live
             </span>
-            <span className="text-[10px] tracking-wide font-semibold text-emerald-900 xs:hidden">
+            <span className="text-[10px] tracking-wide font-semibold xs:hidden">
               Live
             </span>
-          </div>
+            {connectionLatency !== null && syncStatus === 'connected' && (
+              <span className="text-[10px] opacity-70 hidden sm:inline">
+                {connectionLatency}ms
+              </span>
+            )}
+          </button>
 
+          {/* Quick Info Tooltip on Hover */}
           {showStatusTooltip && (
             <div
-              className="absolute right-0 mt-2 w-64 p-3 bg-white rounded-xl shadow-lg border border-slate-200 text-xs text-slate-600 z-50"
+              className="absolute right-0 mt-2 w-64 p-3 bg-white rounded-xl shadow-xl border border-slate-200 text-xs text-slate-600 z-50 animate-in fade-in zoom-in-95 duration-150"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center gap-1.5 font-semibold text-slate-800 mb-1">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Connected in real-time</span>
+              <div className="flex items-center justify-between font-semibold text-slate-800 mb-1">
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Firestore Conectado</span>
+                </div>
+                <span className="text-[10px] text-emerald-600 font-mono">
+                  {connectionLatency ? `${connectionLatency}ms` : 'ok'}
+                </span>
               </div>
               <p className="text-[11px] text-slate-500 leading-relaxed mb-2">
-                All sessions, vocabulary, and grammar rules are synced live across devices with Firestore.
+                Banco ao vivo sincronizado. Clique para abrir o painel completo de diagnóstico e testes do Firebase.
               </p>
               <div className="text-[10px] text-slate-400 border-t border-slate-100 pt-1.5 flex justify-between">
-                <span>{sessions.length} sessions</span>
-                <span>{vocabulary.length} words</span>
-                <span>{grammar.length} topics</span>
+                <span>{sessions.length} sessões</span>
+                <span>{vocabulary.length} palavras</span>
+                <span>{grammar.length} tópicos</span>
+              </div>
+              <div className="mt-2 pt-1.5 border-t border-slate-100 text-center">
+                <button
+                  id="tooltip-open-diagnostics"
+                  onClick={openStatusModal}
+                  className="text-[11px] text-emerald-700 hover:text-emerald-900 font-semibold inline-flex items-center gap-1"
+                >
+                  <Database className="w-3 h-3" />
+                  Abrir painel de status
+                </button>
               </div>
             </div>
           )}
@@ -110,23 +158,50 @@ export const Header: React.FC = () => {
           <span>Log</span>
         </button>
 
-        {/* Study Season & User Avatar */}
-        <div className="hidden sm:flex items-center gap-3">
-          <div className="text-right">
-            <div className="text-xs font-bold text-slate-800 tracking-tight">
-              Study season
-            </div>
-            <div className="text-[11px] text-slate-400 font-medium">
-              Keep the thread going
-            </div>
-          </div>
-          <div
-            id="user-avatar"
-            className="w-8 h-8 rounded-full bg-[#EDE9FE] text-[#6D28D9] font-bold text-xs flex items-center justify-center border border-[#DDD6FE] shadow-2xs"
-            title="Logged in Learner"
-          >
-            S
-          </div>
+        {/* User Profile / Google Sign-In Area */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {user ? (
+            <button
+              id="header-user-profile-btn"
+              onClick={openStatusModal}
+              className="flex items-center gap-2 p-1 sm:px-2.5 sm:py-1 rounded-full hover:bg-slate-200/50 transition-colors"
+              title="Conta autenticada - clique para detalhes"
+            >
+              <div className="hidden lg:block text-right">
+                <div className="text-xs font-bold text-slate-800 tracking-tight leading-tight max-w-[120px] truncate">
+                  {user.displayName || user.email?.split('@')[0]}
+                </div>
+                <div className="text-[10px] text-emerald-700 font-medium leading-tight">
+                  Firebase Ativo
+                </div>
+              </div>
+              <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center border border-emerald-300 shadow-2xs overflow-hidden">
+                {user.photoURL ? (
+                  <img
+                    src={user.photoURL}
+                    alt={user.displayName || 'Avatar'}
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  (user.displayName?.[0] || user.email?.[0] || 'U').toUpperCase()
+                )}
+              </div>
+            </button>
+          ) : (
+            <button
+              id="header-signin-prompt-btn"
+              onClick={openStatusModal}
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-all active:scale-95"
+              title="Clique para ver o status do Firebase ou entrar com Google"
+            >
+              <LogIn className="w-3.5 h-3.5 text-slate-500" />
+              <span className="hidden sm:inline">Entrar</span>
+              <span className="w-6 h-6 rounded-full bg-[#EDE9FE] text-[#6D28D9] font-bold text-[10px] flex items-center justify-center border border-[#DDD6FE]">
+                G
+              </span>
+            </button>
+          )}
         </div>
       </div>
     </header>

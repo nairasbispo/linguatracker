@@ -1,0 +1,105 @@
+{
+  "entities": {
+    "Language": {
+      "title": "Language",
+      "description": "A language being tracked in LinguaTrack",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "name": { "type": "string", "maxLength": 100 },
+        "code": { "type": "string", "maxLength": 10 },
+        "color": { "type": "string", "maxLength": 30 },
+        "badgeBg": { "type": "string", "maxLength": 30 },
+        "badgeText": { "type": "string", "maxLength": 30 },
+        "accentColor": { "type": "string", "maxLength": 30 }
+      },
+      "required": ["id", "name", "code"]
+    },
+    "PracticeSession": {
+      "title": "PracticeSession",
+      "description": "Log of a language practice session with breakdown by skills",
+      "type": "object",
+      "properties": {
+        "languageId": { "type": "string", "maxLength": 64 },
+        "date": { "type": "string", "maxLength": 20 },
+        "listening": { "type": "number" },
+        "speaking": { "type": "number" },
+        "reading": { "type": "number" },
+        "writing": { "type": "number" },
+        "totalMinutes": { "type": "number" },
+        "notes": { "type": "string", "maxLength": 2000 },
+        "createdAt": { "type": "number" },
+        "userId": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["languageId", "date", "totalMinutes", "createdAt"]
+    },
+    "GrammarTopic": {
+      "title": "GrammarTopic",
+      "description": "A grammar topic tracked with mastery status and confidence",
+      "type": "object",
+      "properties": {
+        "languageId": { "type": "string", "maxLength": 64 },
+        "title": { "type": "string", "maxLength": 200 },
+        "status": { "type": "string", "enum": ["want_to_study", "practicing", "mastered"], "maxLength": 30 },
+        "confidence": { "type": "number" },
+        "notes": { "type": "string", "maxLength": 2000 },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" },
+        "userId": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["languageId", "title", "status", "confidence", "createdAt"]
+    },
+    "VocabularyWord": {
+      "title": "VocabularyWord",
+      "description": "A vocabulary entry with word, phonetic transcription and meaning",
+      "type": "object",
+      "properties": {
+        "languageId": { "type": "string", "maxLength": 64 },
+        "word": { "type": "string", "maxLength": 200 },
+        "pronunciation": { "type": "string", "maxLength": 200 },
+        "meaning": { "type": "string", "maxLength": 500 },
+        "example": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "number" },
+        "userId": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["languageId", "word", "meaning", "createdAt"]
+    },
+    "LanguageGoal": {
+      "title": "LanguageGoal",
+      "description": "Weekly or daily practice target goal",
+      "type": "object",
+      "properties": {
+        "languageId": { "type": "string", "maxLength": 64 },
+        "skill": { "type": "string", "maxLength": 100 },
+        "period": { "type": "string", "maxLength": 20 },
+        "targetMinutes": { "type": "number" },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "number" },
+        "userId": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["languageId", "skill", "period", "targetMinutes", "active"]
+    }
+  },
+  "firestore": {
+    "/languages/{languageId}": {
+      "schema": "Language",
+      "description": "Languages configured for the learner"
+    },
+    "/practice_sessions/{sessionId}": {
+      "schema": "PracticeSession",
+      "description": "Historical log of practice sessions"
+    },
+    "/grammar_topics/{topicId}": {
+      "schema": "GrammarTopic",
+      "description": "Grammar topics and mastery status"
+    },
+    "/vocabulary_words/{wordId}": {
+      "schema": "VocabularyWord",
+      "description": "Vocabulary dictionary entries"
+    },
+    "/language_goals/{goalId}": {
+      "schema": "LanguageGoal",
+      "description": "Study rhythm goals and targets"
+    }
+  }
+}
