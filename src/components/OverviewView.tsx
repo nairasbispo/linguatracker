@@ -11,6 +11,7 @@ import {
   BookOpen,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { ContentRankingSection } from './ContentRankingSection';
 
 export const OverviewView: React.FC = () => {
   const {
@@ -297,6 +298,9 @@ export const OverviewView: React.FC = () => {
         </div>
       </div>
 
+      {/* Content Consumption & Grammar Rankings */}
+      <ContentRankingSection />
+
       {/* Bottom Row: Recent Practice + Grammar Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Recent Practice (2 cols) */}
@@ -346,11 +350,32 @@ export const OverviewView: React.FC = () => {
                             {s.notes}
                           </div>
                         )}
-                        <div className="flex gap-2 text-[10px] text-slate-400 mt-1">
-                          {s.listening > 0 && <span>🎧 {s.listening}m</span>}
-                          {s.speaking > 0 && <span>🗣️ {s.speaking}m</span>}
-                          {s.reading > 0 && <span>📖 {s.reading}m</span>}
-                          {s.writing > 0 && <span>✍️ {s.writing}m</span>}
+                        <div className="flex flex-wrap gap-1.5 text-[10px] text-slate-500 mt-1.5">
+                          {s.listening > 0 && (
+                            <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 font-medium">
+                              🎧 {s.listening}m {s.listeningDetail?.format ? `• ${s.listeningDetail.format}` : ''} {s.listeningDetail?.topicCategory ? `(${s.listeningDetail.topicCategory})` : ''}
+                            </span>
+                          )}
+                          {s.reading > 0 && (
+                            <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-800 font-medium">
+                              📖 {s.reading}m {s.readingDetail?.format ? `• ${s.readingDetail.format}` : ''} {s.readingDetail?.topicCategory ? `(${s.readingDetail.topicCategory})` : ''}
+                            </span>
+                          )}
+                          {(s.grammar || 0) > 0 && (
+                            <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-900 font-medium">
+                              📐 {s.grammar}m {s.grammarTopic ? `• ${s.grammarTopic}` : ''}
+                            </span>
+                          )}
+                          {s.writing > 0 && (
+                            <span className="px-1.5 py-0.5 rounded bg-orange-50 text-orange-800 font-medium">
+                              ✍️ {s.writing}m {s.writingDetail?.format ? `• ${s.writingDetail.format}` : ''}
+                            </span>
+                          )}
+                          {s.speaking > 0 && (
+                            <span className="px-1.5 py-0.5 rounded bg-purple-50 text-purple-800 font-medium">
+                              🗣️ {s.speaking}m {s.speakingDetail?.format ? `• ${s.speakingDetail.format}` : ''}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>

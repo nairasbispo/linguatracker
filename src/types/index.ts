@@ -1,4 +1,10 @@
-export type SkillType = 'listening' | 'speaking' | 'reading' | 'writing';
+export type SkillType = 'listening' | 'speaking' | 'reading' | 'writing' | 'grammar';
+
+export interface SkillContentDetail {
+  format?: string;        // e.g. "YouTube", "Podcast", "Movie", "Article", "Book", "Journal", "Conversation"
+  topicCategory?: string; // e.g. "AI / Tech", "Geopolitics", "Entertainment", "Science", "History", "Daily Life"
+  titleOrDescription?: string; // specific content title or custom detail
+}
 
 export interface Language {
   id: string;
@@ -18,9 +24,15 @@ export interface PracticeSession {
   speaking: number;
   reading: number;
   writing: number;
+  grammar?: number; // in minutes
+  grammarTopic?: string; // e.g. "Passé Composé", "Conditionnel", "Phrasal Verbs"
   totalMinutes: number;
   notes?: string;
   createdAt: number;
+  listeningDetail?: SkillContentDetail;
+  readingDetail?: SkillContentDetail;
+  writingDetail?: SkillContentDetail;
+  speakingDetail?: SkillContentDetail;
 }
 
 export type GrammarStatus = 'learning' | 'practicing' | 'mastered';

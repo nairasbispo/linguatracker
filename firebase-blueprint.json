@@ -17,7 +17,7 @@
     },
     "PracticeSession": {
       "title": "PracticeSession",
-      "description": "Log of a language practice session with breakdown by skills",
+      "description": "Log of a language practice session with breakdown by skills, content types, and grammar topics",
       "type": "object",
       "properties": {
         "languageId": { "type": "string", "maxLength": 64 },
@@ -26,8 +26,14 @@
         "speaking": { "type": "number" },
         "reading": { "type": "number" },
         "writing": { "type": "number" },
+        "grammar": { "type": "number" },
+        "grammarTopic": { "type": "string", "maxLength": 200 },
         "totalMinutes": { "type": "number" },
         "notes": { "type": "string", "maxLength": 2000 },
+        "listeningDetail": { "type": "object" },
+        "readingDetail": { "type": "object" },
+        "writingDetail": { "type": "object" },
+        "speakingDetail": { "type": "object" },
         "createdAt": { "type": "number" },
         "userId": { "type": "string", "maxLength": 128 }
       },

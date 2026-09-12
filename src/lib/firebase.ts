@@ -162,14 +162,14 @@ export const INITIAL_VOCABULARY: Omit<VocabularyWord, 'id'>[] = [
     languageId: 'en',
     word: 'Hi',
     pronunciation: '/haɪ/',
-    meaning: 'Primeiro cumprimento, olá informal',
+    meaning: 'First greeting, informal hello',
     createdAt: Date.now() - 86400000,
   },
   {
     languageId: 'fr',
     word: 'Bonjour',
     pronunciation: '/bɔ̃.ʒuʁ/',
-    meaning: 'Bom dia ou olá formal/cotidiano',
+    meaning: 'Good morning, formal or everyday hello',
     createdAt: Date.now() - 86400000,
   },
 ];
@@ -336,11 +336,29 @@ export async function ensureInitialLanguagesIfEmpty() {
   }
 }
 
+// Helper to remove undefined properties before saving to Firestore
+function cleanUndefined<T extends Record<string, any>>(obj: T): T {
+  const result: any = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+        const nested = cleanUndefined(value);
+        if (Object.keys(nested).length > 0) {
+          result[key] = nested;
+        }
+      } else {
+        result[key] = value;
+      }
+    }
+  }
+  return result;
+}
+
 // Database mutation actions with strict error handlers
 export async function addPracticeSession(session: Omit<PracticeSession, 'id'>, customId?: string) {
   const docRef = customId ? doc(db, 'practice_sessions', customId) : doc(collection(db, 'practice_sessions'));
   try {
-    await setDoc(docRef, session);
+    await setDoc(docRef, cleanUndefined(session));
     return docRef;
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, `practice_sessions/${docRef.id}`);

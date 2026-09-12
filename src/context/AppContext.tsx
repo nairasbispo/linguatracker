@@ -75,6 +75,7 @@ interface AppContextType {
       speaking: number;
       reading: number;
       writing: number;
+      grammar: number;
       streak: number;
       activeDaysThisWeek: number;
       goalMinutes: number;
@@ -280,6 +281,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const speaking = langSessions.reduce((acc, s) => acc + (s.speaking || 0), 0);
       const reading = langSessions.reduce((acc, s) => acc + (s.reading || 0), 0);
       const writing = langSessions.reduce((acc, s) => acc + (s.writing || 0), 0);
+      const grammar = langSessions.reduce((acc, s) => acc + (s.grammar || 0), 0);
 
       // Active distinct days in current week
       const distinctDaysThisWeek = new Set(weekSessions.map((s) => s.date)).size;
@@ -318,6 +320,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         speaking,
         reading,
         writing,
+        grammar,
         streak,
         activeDaysThisWeek: distinctDaysThisWeek,
         goalMinutes,

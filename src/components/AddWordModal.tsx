@@ -235,12 +235,12 @@ export const AddWordModal: React.FC = () => {
                   {isFetchingPhonetic ? (
                     <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 animate-pulse">
                       <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                      <span>Buscando IPA...</span>
+                      <span>Fetching IPA...</span>
                     </span>
                   ) : isPhoneticAutoFilled ? (
                     <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 bg-emerald-50/80 px-2 py-0.5 rounded-full border border-emerald-200">
                       <Check className="w-2.5 h-2.5 text-emerald-600" />
-                      <span>Automático</span>
+                      <span>Auto</span>
                     </span>
                   ) : (
                     word.trim().length >= 2 && (
@@ -250,7 +250,7 @@ export const AddWordModal: React.FC = () => {
                         className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 hover:text-emerald-950 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200/80 transition-colors"
                       >
                         <Sparkles className="w-2.5 h-2.5 text-emerald-600" />
-                        <span>Gerar</span>
+                        <span>Generate</span>
                       </button>
                     )
                   )}
@@ -288,7 +288,7 @@ export const AddWordModal: React.FC = () => {
                   onClick={() => setMeaning(suggestedMeaning)}
                   className="text-[11px] text-emerald-700 hover:text-emerald-900 font-semibold underline underline-offset-2 flex items-center gap-1"
                 >
-                  <span>Preencher: "{suggestedMeaning.slice(0, 28)}{suggestedMeaning.length > 28 ? '...' : ''}"</span>
+                  <span>Use suggested: "{suggestedMeaning.slice(0, 28)}{suggestedMeaning.length > 28 ? '...' : ''}"</span>
                 </button>
               )}
             </div>
@@ -314,7 +314,7 @@ export const AddWordModal: React.FC = () => {
                   onClick={() => setExample(suggestedExample)}
                   className="text-[11px] text-emerald-700 hover:text-emerald-900 font-semibold underline underline-offset-2 flex items-center gap-1"
                 >
-                  <span>Usar exemplo sugerido</span>
+                  <span>Use suggested example</span>
                 </button>
               )}
             </div>

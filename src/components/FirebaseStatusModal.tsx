@@ -94,7 +94,7 @@ export const FirebaseStatusModal: React.FC = () => {
       await loginWithGoogle();
     } catch (err: any) {
       console.error('Login error:', err);
-      setAuthError(err?.message || 'Falha ao autenticar com o Google. Tente novamente.');
+      setAuthError(err?.message || 'Failed to authenticate with Google. Please try again.');
     }
   };
 
@@ -117,14 +117,14 @@ export const FirebaseStatusModal: React.FC = () => {
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                Painel do Firebase & Firestore
+                Firebase & Firestore Dashboard
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                  Ao Vivo
+                  Live
                 </span>
               </h2>
               <p className="text-xs text-slate-500">
-                Status de sincronização em tempo real e verificação de banco de dados
+                Real-time sync status and database verification
               </p>
             </div>
           </div>
@@ -145,16 +145,16 @@ export const FirebaseStatusModal: React.FC = () => {
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <span className="font-semibold text-emerald-950 text-sm">
-                  Firestore Conectado e Operacional
+                  Firestore Connected & Operational
                 </span>
                 {connectionLatency !== null && (
                   <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-emerald-200/70 text-emerald-900">
-                    Latência: {connectionLatency} ms
+                    Latency: {connectionLatency} ms
                   </span>
                 )}
               </div>
               <p className="text-xs text-emerald-800/90 mt-1 leading-relaxed">
-                Todas as alterações feitas no vocabulário, sessões de estudo, metas e tópicos gramaticais são sincronizadas instantaneamente com o banco Firestore.
+                All changes to vocabulary, practice sessions, goals, and grammar topics sync instantly with Firestore.
               </p>
             </div>
           </div>
@@ -164,27 +164,27 @@ export const FirebaseStatusModal: React.FC = () => {
             <div className="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50">
               <div className="text-[11px] uppercase tracking-wider font-bold text-slate-400 mb-1 flex items-center gap-1.5">
                 <Cloud className="w-3.5 h-3.5 text-slate-500" />
-                Banco de Dados
+                Database
               </div>
               <div className="font-mono text-xs font-semibold text-slate-800 break-all">
                 ai-studio-679e5b77-c30e-454c-a05d-9431e4b181d1
               </div>
               <div className="text-[11px] text-slate-500 mt-1">
-                Instância dedicada para o seu app
+                Dedicated instance for your app
               </div>
             </div>
 
             <div className="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50">
               <div className="text-[11px] uppercase tracking-wider font-bold text-slate-400 mb-1 flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-slate-500" />
-                Segurança & Regras
+                Security & Rules
               </div>
               <div className="font-semibold text-xs text-slate-800 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                Regras Ativas e Implantadas
+                Rules Active & Deployed
               </div>
               <div className="text-[11px] text-slate-500 mt-1">
-                Leitura e gravação permitidas para coleções
+                Read and write permitted for app collections
               </div>
             </div>
           </div>
@@ -194,7 +194,7 @@ export const FirebaseStatusModal: React.FC = () => {
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                 <Layers className="w-3.5 h-3.5 text-slate-600" />
-                Documentos Carregados em Tempo Real
+                Real-Time Documents Loaded
               </span>
               <span className="text-[11px] text-slate-400">
                 Total: {languages.length + sessions.length + grammar.length + vocabulary.length + goals.length} docs
@@ -204,23 +204,23 @@ export const FirebaseStatusModal: React.FC = () => {
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center">
               <div className="p-2.5 rounded-xl bg-slate-100/70 border border-slate-200/60">
                 <div className="text-lg font-bold text-slate-800">{languages.length}</div>
-                <div className="text-[11px] text-slate-500 font-medium">Idiomas</div>
+                <div className="text-[11px] text-slate-500 font-medium">Languages</div>
               </div>
               <div className="p-2.5 rounded-xl bg-slate-100/70 border border-slate-200/60">
                 <div className="text-lg font-bold text-slate-800">{sessions.length}</div>
-                <div className="text-[11px] text-slate-500 font-medium">Sessões</div>
+                <div className="text-[11px] text-slate-500 font-medium">Sessions</div>
               </div>
               <div className="p-2.5 rounded-xl bg-slate-100/70 border border-slate-200/60">
                 <div className="text-lg font-bold text-slate-800">{grammar.length}</div>
-                <div className="text-[11px] text-slate-500 font-medium">Gramática</div>
+                <div className="text-[11px] text-slate-500 font-medium">Grammar</div>
               </div>
               <div className="p-2.5 rounded-xl bg-slate-100/70 border border-slate-200/60">
                 <div className="text-lg font-bold text-slate-800">{vocabulary.length}</div>
-                <div className="text-[11px] text-slate-500 font-medium">Vocábulos</div>
+                <div className="text-[11px] text-slate-500 font-medium">Vocabulary</div>
               </div>
               <div className="col-span-2 sm:col-span-1 p-2.5 rounded-xl bg-slate-100/70 border border-slate-200/60">
                 <div className="text-lg font-bold text-slate-800">{goals.length}</div>
-                <div className="text-[11px] text-slate-500 font-medium">Metas</div>
+                <div className="text-[11px] text-slate-500 font-medium">Goals</div>
               </div>
             </div>
           </div>
@@ -251,15 +251,15 @@ export const FirebaseStatusModal: React.FC = () => {
                   </div>
                   <div className="text-sm font-semibold text-slate-900">
                     {user ? (
-                      user.email || user.displayName || 'Usuário Autenticado'
+                      user.email || user.displayName || 'Authenticated User'
                     ) : (
-                      'Modo Conectado / Sessão Ativa'
+                      'Connected Mode / Active Session'
                     )}
                   </div>
                   <div className="text-[11px] text-slate-500">
                     {user
                       ? `UID: ${user.uid.slice(0, 16)}...`
-                      : 'Você pode entrar com sua conta Google para sincronizar seu perfil'}
+                      : 'Sign in with your Google account to sync your profile across devices'}
                   </div>
                 </div>
               </div>
@@ -273,7 +273,7 @@ export const FirebaseStatusModal: React.FC = () => {
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold shadow-2xs transition-colors"
                   >
                     <LogOut className="w-3.5 h-3.5" />
-                    Sair
+                    Sign out
                   </button>
                 ) : (
                   <button
@@ -287,7 +287,7 @@ export const FirebaseStatusModal: React.FC = () => {
                     ) : (
                       <LogIn className="w-3.5 h-3.5" />
                     )}
-                    Entrar com Google
+                    Sign in with Google
                   </button>
                 )}
               </div>
@@ -306,10 +306,10 @@ export const FirebaseStatusModal: React.FC = () => {
               <div>
                 <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                   <Zap className="w-3.5 h-3.5 text-amber-500" />
-                  Teste de Diagnóstico em Tempo Real
+                  Real-Time Diagnostic Test
                 </span>
                 <p className="text-[11px] text-slate-500">
-                  Grave e leia um documento de teste diretamente no Firestore para confirmar operação
+                  Write and read a test document directly in Firestore to verify live operation
                 </p>
               </div>
 
@@ -322,12 +322,12 @@ export const FirebaseStatusModal: React.FC = () => {
                 {diagnostic.running ? (
                   <>
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    Testando...
+                    Testing...
                   </>
                 ) : (
                   <>
                     <Zap className="w-3.5 h-3.5" />
-                    Executar Teste
+                    Run Test
                   </>
                 )}
               </button>
@@ -345,8 +345,8 @@ export const FirebaseStatusModal: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     <div>
-                      <span className="font-semibold">Sucesso total!</span> Gravação no Firestore concluída em{' '}
-                      <strong>{diagnostic.writeMs} ms</strong> e leitura em{' '}
+                      <span className="font-semibold">Test Successful!</span> Firestore write completed in{' '}
+                      <strong>{diagnostic.writeMs} ms</strong> and read in{' '}
                       <strong>{diagnostic.readMs} ms</strong>.
                     </div>
                   </div>
@@ -354,7 +354,7 @@ export const FirebaseStatusModal: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
                     <div>
-                      <span className="font-semibold">Erro no teste:</span> {diagnostic.error}
+                      <span className="font-semibold">Test Error:</span> {diagnostic.error}
                     </div>
                   </div>
                 )}
@@ -372,7 +372,7 @@ export const FirebaseStatusModal: React.FC = () => {
             className="flex items-center gap-1.5 text-xs text-slate-600 hover:text-slate-900 font-medium py-1 px-2.5 rounded-md hover:bg-slate-200/50 transition-colors"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${testingConnection ? 'animate-spin text-emerald-600' : ''}`} />
-            {testingConnection ? 'Medindo latência...' : 'Atualizar Conexão'}
+            {testingConnection ? 'Measuring latency...' : 'Refresh Connection'}
           </button>
 
           <button
@@ -380,7 +380,7 @@ export const FirebaseStatusModal: React.FC = () => {
             onClick={() => setModal(null)}
             className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold shadow-2xs transition-colors"
           >
-            Fechar
+            Close
           </button>
         </div>
       </div>

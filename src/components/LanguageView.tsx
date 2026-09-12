@@ -8,11 +8,13 @@ import {
   Mic,
   BookOpen,
   PenTool,
+  Bookmark,
   Sparkles,
   Trash2,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import type { Language } from '../types';
+import { ContentRankingSection } from './ContentRankingSection';
 
 interface LanguageViewProps {
   language: Language;
@@ -34,6 +36,7 @@ export const LanguageView: React.FC<LanguageViewProps> = ({ language }) => {
     speaking: 0,
     reading: 0,
     writing: 0,
+    grammar: 0,
     streak: 0,
     activeDaysThisWeek: 0,
     goalMinutes: 30,
@@ -48,7 +51,7 @@ export const LanguageView: React.FC<LanguageViewProps> = ({ language }) => {
   };
 
   // Skill max for bar proportion
-  const maxSkillMin = Math.max(1, stats.listening, stats.speaking, stats.reading, stats.writing);
+  const maxSkillMin = Math.max(1, stats.listening, stats.speaking, stats.reading, stats.writing, stats.grammar || 0);
 
   return (
     <div id={`language-view-${language.id}`} className="space-y-8 max-w-6xl mx-auto pb-16">
@@ -266,6 +269,25 @@ export const LanguageView: React.FC<LanguageViewProps> = ({ language }) => {
                   {stats.writing}
                 </span>
               </div>
+
+              {/* Grammar */}
+              <div className="flex items-center justify-between gap-3 text-xs text-slate-600">
+                <div className="flex items-center gap-2 w-24">
+                  <Bookmark className="w-3.5 h-3.5 text-amber-600" />
+                  <span>grammar</span>
+                </div>
+                <div className="flex-1 bg-[#F0ECE1] rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className="bg-amber-600/70 h-full rounded-full"
+                    style={{
+                      width: `${Math.min(100, ((stats.grammar || 0) / maxSkillMin) * 100)}%`,
+                    }}
+                  ></div>
+                </div>
+                <span className="font-semibold text-slate-800 w-8 text-right">
+                  {stats.grammar || 0}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -328,26 +350,31 @@ export const LanguageView: React.FC<LanguageViewProps> = ({ language }) => {
                         </p>
                       )}
 
-                      {/* Skill badges */}
-                      <div className="flex flex-wrap gap-2 pt-1 text-[11px] text-slate-500">
+                      {/* Skill badges with content details */}
+                      <div className="flex flex-wrap gap-1.5 pt-1 text-[11px] text-slate-500">
                         {session.listening > 0 && (
-                          <span className="px-2 py-0.5 bg-[#EAE4D7] rounded-md text-slate-700">
-                            🎧 {session.listening}m listening
-                          </span>
-                        )}
-                        {session.speaking > 0 && (
-                          <span className="px-2 py-0.5 bg-[#EAE4D7] rounded-md text-slate-700">
-                            🗣️ {session.speaking}m speaking
+                          <span className="px-2 py-0.5 bg-emerald-50 text-emerald-800 font-medium rounded-md">
+                            🎧 {session.listening}m listening {session.listeningDetail?.format ? `• ${session.listeningDetail.format}` : ''} {session.listeningDetail?.topicCategory ? `(${session.listeningDetail.topicCategory})` : ''}
                           </span>
                         )}
                         {session.reading > 0 && (
-                          <span className="px-2 py-0.5 bg-[#EAE4D7] rounded-md text-slate-700">
-                            📖 {session.reading}m reading
+                          <span className="px-2 py-0.5 bg-blue-50 text-blue-800 font-medium rounded-md">
+                            📖 {session.reading}m reading {session.readingDetail?.format ? `• ${session.readingDetail.format}` : ''} {session.readingDetail?.topicCategory ? `(${session.readingDetail.topicCategory})` : ''}
+                          </span>
+                        )}
+                        {(session.grammar || 0) > 0 && (
+                          <span className="px-2 py-0.5 bg-amber-50 text-amber-900 font-medium rounded-md">
+                            📐 {session.grammar}m grammar {session.grammarTopic ? `• ${session.grammarTopic}` : ''}
                           </span>
                         )}
                         {session.writing > 0 && (
-                          <span className="px-2 py-0.5 bg-[#EAE4D7] rounded-md text-slate-700">
-                            ✍️ {session.writing}m writing
+                          <span className="px-2 py-0.5 bg-orange-50 text-orange-800 font-medium rounded-md">
+                            ✍️ {session.writing}m writing {session.writingDetail?.format ? `• ${session.writingDetail.format}` : ''}
+                          </span>
+                        )}
+                        {session.speaking > 0 && (
+                          <span className="px-2 py-0.5 bg-purple-50 text-purple-800 font-medium rounded-md">
+                            🗣️ {session.speaking}m speaking {session.speakingDetail?.format ? `• ${session.speakingDetail.format}` : ''}
                           </span>
                         )}
                       </div>
@@ -366,6 +393,11 @@ export const LanguageView: React.FC<LanguageViewProps> = ({ language }) => {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Language-specific Content & Grammar Ranking */}
+      <div className="pt-2">
+        <ContentRankingSection initialLanguageId={language.id} showLanguageSelector={false} />
       </div>
     </div>
   );
