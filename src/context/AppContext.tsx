@@ -2,17 +2,13 @@ import React, { createContext, useContext, useEffect, useState, useMemo } from '
 import type { Language, PracticeSession, GrammarTopic, VocabularyWord, LanguageGoal } from '../types';
 import {
   subscribeToCollection,
-  seedInitialDataIfEmpty,
+  ensureInitialLanguagesIfEmpty,
   testFirestoreConnection,
   signInWithGoogle,
   logoutUser,
   onAuthStateChanged,
   User,
   DEFAULT_LANGUAGES,
-  INITIAL_SESSIONS,
-  INITIAL_GRAMMAR,
-  INITIAL_VOCABULARY,
-  INITIAL_GOALS,
   addPracticeSession,
   deletePracticeSession,
   addGrammarTopic,
@@ -89,18 +85,10 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [languages, setLanguages] = useState<Language[]>(DEFAULT_LANGUAGES);
-  const [sessions, setSessions] = useState<PracticeSession[]>(() => {
-    return INITIAL_SESSIONS.map((s, idx) => ({ ...s, id: `seed-session-${idx}` }));
-  });
-  const [grammar, setGrammar] = useState<GrammarTopic[]>(() => {
-    return INITIAL_GRAMMAR.map((g, idx) => ({ ...g, id: `seed-grammar-${idx}` }));
-  });
-  const [vocabulary, setVocabulary] = useState<VocabularyWord[]>(() => {
-    return INITIAL_VOCABULARY.map((v, idx) => ({ ...v, id: `seed-vocab-${idx}` }));
-  });
-  const [goals, setGoals] = useState<LanguageGoal[]>(() => {
-    return INITIAL_GOALS.map((gl, idx) => ({ ...gl, id: `seed-goal-${idx}` }));
-  });
+  const [sessions, setSessions] = useState<PracticeSession[]>([]);
+  const [grammar, setGrammar] = useState<GrammarTopic[]>([]);
+  const [vocabulary, setVocabulary] = useState<VocabularyWord[]>([]);
+  const [goals, setGoals] = useState<LanguageGoal[]>([]);
 
   const [activeTab, setActiveTabState] = useState<string>('overview');
   const [syncStatus, setSyncStatus] = useState<'connected' | 'syncing' | 'offline'>('syncing');
@@ -163,8 +151,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setConnectionLatency(testRes.latencyMs);
         }
 
-        // Seed initial data if database is empty
-        await seedInitialDataIfEmpty();
+        // Ensure baseline languages exist in Firestore if collection is empty
+        await ensureInitialLanguagesIfEmpty();
 
         // 1. Languages
         const unsubLang = subscribeToCollection<Language>(
@@ -348,54 +336,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return sessions.filter((s) => isDateInCurrentWeek(s.date)).reduce((acc, s) => acc + (s.totalMinutes || 0), 0);
   }, [sessions]);
 
-  // Database Mutation Actions with immediate ID alignment
+  // Database Mutation Actions with direct Firestore synchronization
   const createSession = async (session: Omit<PracticeSession, 'id'>) => {
-    const tempId = `temp-${Date.now()}`;
-    const newSession: PracticeSession = { ...session, id: tempId };
-    setSessions((prev) => [newSession, ...prev]);
-
     try {
       const docRef = await addPracticeSession(session);
       if (docRef?.id) {
-        setSessions((prev) => prev.map((s) => (s.id === tempId ? { ...s, id: docRef.id } : s)));
+        const newSession: PracticeSession = { ...session, id: docRef.id };
+        setSessions((prev) => {
+          if (prev.some((s) => s.id === docRef.id)) return prev;
+          return [newSession, ...prev];
+        });
       }
     } catch (e) {
       console.error('Error adding practice session:', e);
+      throw e;
     }
   };
 
   const removeSession = async (id: string) => {
     setSessions((prev) => prev.filter((s) => s.id !== id));
     try {
-      if (!id.startsWith('seed-') && !id.startsWith('temp-')) {
-        await deletePracticeSession(id);
-      }
+      await deletePracticeSession(id);
     } catch (e) {
       console.error('Error removing practice session:', e);
     }
   };
 
   const createGrammar = async (topic: Omit<GrammarTopic, 'id'>) => {
-    const tempId = `temp-${Date.now()}`;
-    const newTopic: GrammarTopic = { ...topic, id: tempId };
-    setGrammar((prev) => [newTopic, ...prev]);
-
     try {
       const docRef = await addGrammarTopic(topic);
       if (docRef?.id) {
-        setGrammar((prev) => prev.map((g) => (g.id === tempId ? { ...g, id: docRef.id } : g)));
+        const newTopic: GrammarTopic = { ...topic, id: docRef.id };
+        setGrammar((prev) => {
+          if (prev.some((g) => g.id === docRef.id)) return prev;
+          return [newTopic, ...prev];
+        });
       }
     } catch (e) {
       console.error('Error adding grammar topic:', e);
+      throw e;
     }
   };
 
   const editGrammar = async (id: string, updates: Partial<GrammarTopic>) => {
     setGrammar((prev) => prev.map((g) => (g.id === id ? { ...g, ...updates, updatedAt: Date.now() } : g)));
     try {
-      if (!id.startsWith('seed-') && !id.startsWith('temp-')) {
-        await updateGrammarTopic(id, { ...updates, updatedAt: Date.now() });
-      }
+      await updateGrammarTopic(id, { ...updates, updatedAt: Date.now() });
     } catch (e) {
       console.error('Error updating grammar topic:', e);
     }
@@ -404,35 +390,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const removeGrammar = async (id: string) => {
     setGrammar((prev) => prev.filter((g) => g.id !== id));
     try {
-      if (!id.startsWith('seed-') && !id.startsWith('temp-')) {
-        await deleteGrammarTopic(id);
-      }
+      await deleteGrammarTopic(id);
     } catch (e) {
       console.error('Error removing grammar topic:', e);
     }
   };
 
   const createWord = async (word: Omit<VocabularyWord, 'id'>) => {
-    const tempId = `temp-${Date.now()}`;
-    const newWord: VocabularyWord = { ...word, id: tempId };
-    setVocabulary((prev) => [newWord, ...prev]);
-
     try {
       const docRef = await addVocabularyWord(word);
       if (docRef?.id) {
-        setVocabulary((prev) => prev.map((w) => (w.id === tempId ? { ...w, id: docRef.id } : w)));
+        const newWord: VocabularyWord = { ...word, id: docRef.id };
+        setVocabulary((prev) => {
+          if (prev.some((w) => w.id === docRef.id)) return prev;
+          return [newWord, ...prev];
+        });
       }
     } catch (e) {
       console.error('Error adding word:', e);
+      throw e;
     }
   };
 
   const editWord = async (id: string, updates: Partial<VocabularyWord>) => {
     setVocabulary((prev) => prev.map((w) => (w.id === id ? { ...w, ...updates } : w)));
     try {
-      if (!id.startsWith('seed-') && !id.startsWith('temp-')) {
-        await updateVocabularyWord(id, updates);
-      }
+      await updateVocabularyWord(id, updates);
     } catch (e) {
       console.error('Error updating word:', e);
     }
@@ -441,35 +424,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const removeWord = async (id: string) => {
     setVocabulary((prev) => prev.filter((w) => w.id !== id));
     try {
-      if (!id.startsWith('seed-') && !id.startsWith('temp-')) {
-        await deleteVocabularyWord(id);
-      }
+      await deleteVocabularyWord(id);
     } catch (e) {
       console.error('Error removing word:', e);
     }
   };
 
   const createGoal = async (goal: Omit<LanguageGoal, 'id'>) => {
-    const tempId = `temp-${Date.now()}`;
-    const newGoal: LanguageGoal = { ...goal, id: tempId };
-    setGoals((prev) => [newGoal, ...prev]);
-
     try {
       const docRef = await addLanguageGoal(goal);
       if (docRef?.id) {
-        setGoals((prev) => prev.map((gl) => (gl.id === tempId ? { ...gl, id: docRef.id } : gl)));
+        const newGoal: LanguageGoal = { ...goal, id: docRef.id };
+        setGoals((prev) => {
+          if (prev.some((g) => g.id === docRef.id)) return prev;
+          return [newGoal, ...prev];
+        });
       }
     } catch (e) {
       console.error('Error adding goal:', e);
+      throw e;
     }
   };
 
   const editGoal = async (id: string, updates: Partial<LanguageGoal>) => {
     setGoals((prev) => prev.map((g) => (g.id === id ? { ...g, ...updates } : g)));
     try {
-      if (!id.startsWith('seed-') && !id.startsWith('temp-')) {
-        await updateLanguageGoal(id, updates);
-      }
+      await updateLanguageGoal(id, updates);
     } catch (e) {
       console.error('Error updating goal:', e);
     }
@@ -478,9 +458,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const removeGoal = async (id: string) => {
     setGoals((prev) => prev.filter((g) => g.id !== id));
     try {
-      if (!id.startsWith('seed-') && !id.startsWith('temp-')) {
-        await deleteLanguageGoal(id);
-      }
+      await deleteLanguageGoal(id);
     } catch (e) {
       console.error('Error removing goal:', e);
     }

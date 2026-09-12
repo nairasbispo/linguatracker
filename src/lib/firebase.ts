@@ -322,50 +322,17 @@ export async function runFirestoreDiagnosticWrite(): Promise<{
   };
 }
 
-// Check and seed initial data if empty
-export async function seedInitialDataIfEmpty() {
+// Check and ensure default languages exist if languages collection is completely empty
+export async function ensureInitialLanguagesIfEmpty() {
   try {
-    // 1. Languages
     const langSnap = await getDocs(collection(db, 'languages'));
     if (langSnap.empty) {
       for (const lang of DEFAULT_LANGUAGES) {
         await setDoc(doc(db, 'languages', lang.id), lang);
       }
     }
-
-    // 2. Practice sessions
-    const sessionSnap = await getDocs(collection(db, 'practice_sessions'));
-    if (sessionSnap.empty) {
-      for (const session of INITIAL_SESSIONS) {
-        await addDoc(collection(db, 'practice_sessions'), session);
-      }
-    }
-
-    // 3. Grammar topics
-    const grammarSnap = await getDocs(collection(db, 'grammar_topics'));
-    if (grammarSnap.empty) {
-      for (const topic of INITIAL_GRAMMAR) {
-        await addDoc(collection(db, 'grammar_topics'), topic);
-      }
-    }
-
-    // 4. Vocabulary
-    const vocabSnap = await getDocs(collection(db, 'vocabulary_words'));
-    if (vocabSnap.empty) {
-      for (const word of INITIAL_VOCABULARY) {
-        await addDoc(collection(db, 'vocabulary_words'), word);
-      }
-    }
-
-    // 5. Goals
-    const goalSnap = await getDocs(collection(db, 'language_goals'));
-    if (goalSnap.empty) {
-      for (const goal of INITIAL_GOALS) {
-        await addDoc(collection(db, 'language_goals'), goal);
-      }
-    }
   } catch (err) {
-    console.warn('Initial seeding fallback handled:', err);
+    console.warn('Initial languages check handled:', err);
   }
 }
 
