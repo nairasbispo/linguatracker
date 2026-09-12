@@ -349,14 +349,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Instant local UI update
     setSessions((prev) => [newSession, ...prev]);
 
-    // Persist to Firestore in background without blocking UI
-    addPracticeSession(session, docRef.id).catch((e) => {
+    try {
+      await addPracticeSession(session, docRef.id);
+      return docRef;
+    } catch (e) {
       console.error('Error adding practice session:', e);
       // Revert if write fails
       setSessions((prev) => prev.filter((s) => s.id !== docRef.id));
-    });
-
-    return docRef;
+      throw e;
+    }
   };
 
   const removeSession = async (id: string) => {
@@ -374,12 +375,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setGrammar((prev) => [newTopic, ...prev]);
 
-    addGrammarTopic(topic, docRef.id).catch((e) => {
+    try {
+      await addGrammarTopic(topic, docRef.id);
+      return docRef;
+    } catch (e) {
       console.error('Error adding grammar topic:', e);
       setGrammar((prev) => prev.filter((g) => g.id !== docRef.id));
-    });
-
-    return docRef;
+      throw e;
+    }
   };
 
   const editGrammar = async (id: string, updates: Partial<GrammarTopic>) => {
@@ -406,12 +409,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setVocabulary((prev) => [newWord, ...prev]);
 
-    addVocabularyWord(word, docRef.id).catch((e) => {
+    try {
+      await addVocabularyWord(word, docRef.id);
+      return docRef;
+    } catch (e) {
       console.error('Error adding word:', e);
       setVocabulary((prev) => prev.filter((w) => w.id !== docRef.id));
-    });
-
-    return docRef;
+      throw e;
+    }
   };
 
   const editWord = async (id: string, updates: Partial<VocabularyWord>) => {
@@ -438,12 +443,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setGoals((prev) => [newGoal, ...prev]);
 
-    addLanguageGoal(goal, docRef.id).catch((e) => {
+    try {
+      await addLanguageGoal(goal, docRef.id);
+      return docRef;
+    } catch (e) {
       console.error('Error adding goal:', e);
       setGoals((prev) => prev.filter((g) => g.id !== docRef.id));
-    });
-
-    return docRef;
+      throw e;
+    }
   };
 
   const editGoal = async (id: string, updates: Partial<LanguageGoal>) => {

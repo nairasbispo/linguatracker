@@ -338,22 +338,35 @@ export async function ensureInitialLanguagesIfEmpty() {
   }
 }
 
-// Helper to remove undefined properties before saving to Firestore
-function cleanUndefined<T extends Record<string, any>>(obj: T): T {
-  const result: any = {};
-  for (const [key, value] of Object.entries(obj)) {
-    if (value !== undefined) {
-      if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
-        const nested = cleanUndefined(value);
-        if (Object.keys(nested).length > 0) {
-          result[key] = nested;
+// Helper to thoroughly remove undefined properties before saving to Firestore
+export function cleanUndefined<T>(obj: T): T {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+  if (Array.isArray(obj)) {
+    return obj
+      .filter((item) => item !== undefined)
+      .map((item) => (typeof item === 'object' ? cleanUndefined(item) : item)) as unknown as T;
+  }
+  if (typeof obj === 'object') {
+    const result: Record<string, any> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (value !== undefined) {
+        if (value !== null && typeof value === 'object') {
+          const cleaned = cleanUndefined(value);
+          // Omit empty plain objects
+          if (typeof cleaned === 'object' && !Array.isArray(cleaned) && Object.keys(cleaned).length === 0) {
+            continue;
+          }
+          result[key] = cleaned;
+        } else {
+          result[key] = value;
         }
-      } else {
-        result[key] = value;
       }
     }
+    return result as T;
   }
-  return result;
+  return obj;
 }
 
 // Database mutation actions with strict error handlers
@@ -380,7 +393,7 @@ export async function deletePracticeSession(id: string) {
 export async function addGrammarTopic(topic: Omit<GrammarTopic, 'id'>, customId?: string) {
   const docRef = customId ? doc(db, 'grammar_topics', customId) : doc(collection(db, 'grammar_topics'));
   try {
-    await setDoc(docRef, topic);
+    await setDoc(docRef, cleanUndefined(topic));
     return docRef;
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, `grammar_topics/${docRef.id}`);
@@ -390,7 +403,7 @@ export async function addGrammarTopic(topic: Omit<GrammarTopic, 'id'>, customId?
 
 export async function updateGrammarTopic(id: string, updates: Partial<GrammarTopic>) {
   try {
-    return await updateDoc(doc(db, 'grammar_topics', id), updates);
+    return await updateDoc(doc(db, 'grammar_topics', id), cleanUndefined(updates));
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, `grammar_topics/${id}`);
     throw error;
@@ -409,7 +422,7 @@ export async function deleteGrammarTopic(id: string) {
 export async function addVocabularyWord(word: Omit<VocabularyWord, 'id'>, customId?: string) {
   const docRef = customId ? doc(db, 'vocabulary_words', customId) : doc(collection(db, 'vocabulary_words'));
   try {
-    await setDoc(docRef, word);
+    await setDoc(docRef, cleanUndefined(word));
     return docRef;
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, `vocabulary_words/${docRef.id}`);
@@ -419,7 +432,7 @@ export async function addVocabularyWord(word: Omit<VocabularyWord, 'id'>, custom
 
 export async function updateVocabularyWord(id: string, updates: Partial<VocabularyWord>) {
   try {
-    await updateDoc(doc(db, 'vocabulary_words', id), updates);
+    return await updateDoc(doc(db, 'vocabulary_words', id), cleanUndefined(updates));
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, `vocabulary_words/${id}`);
     throw error;
@@ -438,7 +451,7 @@ export async function deleteVocabularyWord(id: string) {
 export async function addLanguageGoal(goal: Omit<LanguageGoal, 'id'>, customId?: string) {
   const docRef = customId ? doc(db, 'language_goals', customId) : doc(collection(db, 'language_goals'));
   try {
-    await setDoc(docRef, goal);
+    await setDoc(docRef, cleanUndefined(goal));
     return docRef;
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, `language_goals/${docRef.id}`);
@@ -448,7 +461,7 @@ export async function addLanguageGoal(goal: Omit<LanguageGoal, 'id'>, customId?:
 
 export async function updateLanguageGoal(id: string, updates: Partial<LanguageGoal>) {
   try {
-    return await updateDoc(doc(db, 'language_goals', id), updates);
+    return await updateDoc(doc(db, 'language_goals', id), cleanUndefined(updates));
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, `language_goals/${id}`);
     throw error;
@@ -466,7 +479,7 @@ export async function deleteLanguageGoal(id: string) {
 
 export async function addLanguage(lang: Language) {
   try {
-    return await setDoc(doc(db, 'languages', lang.id), lang);
+    return await setDoc(doc(db, 'languages', lang.id), cleanUndefined(lang));
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, `languages/${lang.id}`);
     throw error;

@@ -138,6 +138,7 @@ export const LogSessionModal: React.FC = () => {
 
   const [notes, setNotes] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (modal !== 'logSession') return null;
 
@@ -155,102 +156,111 @@ export const LogSessionModal: React.FC = () => {
     setExpandedSkill((prev) => (prev === skill ? null : skill));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
+
     if (totalMin <= 0) {
-      alert('Please enter at least 1 minute for at least one skill.');
+      setErrorMessage('Please enter at least 1 minute for at least one skill.');
       return;
     }
 
     setIsSubmitting(true);
 
-    // Build details objects if populated
-    const listeningDetail: SkillContentDetail | undefined =
-      listening > 0 && (listeningFormat || listeningTopic || listeningTitle)
-        ? {
-            format: listeningFormat.trim() || undefined,
-            topicCategory: listeningTopic.trim() || undefined,
-            titleOrDescription: listeningTitle.trim() || undefined,
-          }
-        : undefined;
-
-    const readingDetail: SkillContentDetail | undefined =
-      reading > 0 && (readingFormat || readingTopic || readingTitle)
-        ? {
-            format: readingFormat.trim() || undefined,
-            topicCategory: readingTopic.trim() || undefined,
-            titleOrDescription: readingTitle.trim() || undefined,
-          }
-        : undefined;
-
-    const writingDetail: SkillContentDetail | undefined =
-      writing > 0 && (writingFormat || writingTopic || writingTitle)
-        ? {
-            format: writingFormat.trim() || undefined,
-            topicCategory: writingTopic.trim() || undefined,
-            titleOrDescription: writingTitle.trim() || undefined,
-          }
-        : undefined;
-
-    const speakingDetail: SkillContentDetail | undefined =
-      speaking > 0 && (speakingFormat || speakingTopic || speakingTitle)
-        ? {
-            format: speakingFormat.trim() || undefined,
-            topicCategory: speakingTopic.trim() || undefined,
-            titleOrDescription: speakingTitle.trim() || undefined,
-          }
-        : undefined;
-
-    const cleanGrammarTopic = grammarTopic.trim() || undefined;
-
-    // Save session
-    createSession({
-      languageId,
-      date,
-      listening: Number(listening || 0),
-      speaking: Number(speaking || 0),
-      reading: Number(reading || 0),
-      writing: Number(writing || 0),
-      grammar: Number(grammarMinutes || 0),
-      grammarTopic: cleanGrammarTopic,
-      totalMinutes: totalMin,
-      notes: notes.trim() || undefined,
-      listeningDetail,
-      readingDetail,
-      writingDetail,
-      speakingDetail,
-      createdAt: Date.now(),
-    }).catch(console.error);
-
-    // If a new grammar topic was studied and isn't registered yet in the grammar list, auto-add it!
-    if (cleanGrammarTopic && grammarMinutes > 0) {
-      const exists = grammar.some(
-        (g) => g.languageId === languageId && g.title.toLowerCase() === cleanGrammarTopic.toLowerCase()
-      );
-      if (!exists) {
-        createGrammar({
-          languageId,
-          title: cleanGrammarTopic,
-          status: 'practicing',
-          confidence: 50,
-          notes: `Added via ${grammarMinutes}m practice session on ${date}`,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        }).catch(console.error);
-      }
-    }
-
     try {
-      confetti({
-        particleCount: 45,
-        spread: 65,
-        origin: { y: 0.8 },
-      });
-    } catch {
-      // non-critical
-    }
+      // Build details objects if populated
+      const listeningDetail: SkillContentDetail | undefined =
+        listening > 0 && (listeningFormat || listeningTopic || listeningTitle)
+          ? {
+              format: listeningFormat.trim() || undefined,
+              topicCategory: listeningTopic.trim() || undefined,
+              titleOrDescription: listeningTitle.trim() || undefined,
+            }
+          : undefined;
 
-    setModal(null);
+      const readingDetail: SkillContentDetail | undefined =
+        reading > 0 && (readingFormat || readingTopic || readingTitle)
+          ? {
+              format: readingFormat.trim() || undefined,
+              topicCategory: readingTopic.trim() || undefined,
+              titleOrDescription: readingTitle.trim() || undefined,
+            }
+          : undefined;
+
+      const writingDetail: SkillContentDetail | undefined =
+        writing > 0 && (writingFormat || writingTopic || writingTitle)
+          ? {
+              format: writingFormat.trim() || undefined,
+              topicCategory: writingTopic.trim() || undefined,
+              titleOrDescription: writingTitle.trim() || undefined,
+            }
+          : undefined;
+
+      const speakingDetail: SkillContentDetail | undefined =
+        speaking > 0 && (speakingFormat || speakingTopic || speakingTitle)
+          ? {
+              format: speakingFormat.trim() || undefined,
+              topicCategory: speakingTopic.trim() || undefined,
+              titleOrDescription: speakingTitle.trim() || undefined,
+            }
+          : undefined;
+
+      const cleanGrammarTopic = grammarTopic.trim() || undefined;
+
+      // Save session
+      await createSession({
+        languageId,
+        date: date || new Date().toISOString().split('T')[0],
+        listening: Number(listening || 0),
+        speaking: Number(speaking || 0),
+        reading: Number(reading || 0),
+        writing: Number(writing || 0),
+        grammar: Number(grammarMinutes || 0),
+        grammarTopic: cleanGrammarTopic,
+        totalMinutes: totalMin,
+        notes: notes.trim() || undefined,
+        listeningDetail,
+        readingDetail,
+        writingDetail,
+        speakingDetail,
+        createdAt: Date.now(),
+      });
+
+      // If a new grammar topic was studied and isn't registered yet in the grammar list, auto-add it!
+      if (cleanGrammarTopic && grammarMinutes > 0) {
+        const exists = grammar.some(
+          (g) => g.languageId === languageId && g.title.toLowerCase() === cleanGrammarTopic.toLowerCase()
+        );
+        if (!exists) {
+          createGrammar({
+            languageId,
+            title: cleanGrammarTopic,
+            status: 'practicing',
+            confidence: 50,
+            notes: `Added via ${grammarMinutes}m practice session on ${date}`,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          }).catch(console.error);
+        }
+      }
+
+      try {
+        confetti({
+          particleCount: 45,
+          spread: 65,
+          origin: { y: 0.8 },
+        });
+      } catch {
+        // non-critical
+      }
+
+      setModal(null);
+    } catch (err: any) {
+      console.error('Error saving session:', err);
+      setErrorMessage(err?.message || 'Failed to save session. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -837,6 +847,12 @@ export const LogSessionModal: React.FC = () => {
               className="w-full px-3.5 py-2.5 rounded-xl border border-[#E5E0D5] bg-[#FAF8F3] text-slate-800 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-[#1E5E44] placeholder:text-slate-400"
             ></textarea>
           </div>
+
+          {errorMessage && (
+            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs font-semibold text-rose-700">
+              {errorMessage}
+            </div>
+          )}
 
           {/* Action buttons */}
           <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">

@@ -15,7 +15,7 @@ export const VocabularyView: React.FC = () => {
   // Browser Native Web Speech Synthesis (zero AI required!)
   const playPronunciation = (word: string, langCode: string, id: string) => {
     if (!('speechSynthesis' in window)) {
-      alert('Speech synthesis is not supported in this browser.');
+      console.warn('Speech synthesis is not supported in this browser.');
       return;
     }
 

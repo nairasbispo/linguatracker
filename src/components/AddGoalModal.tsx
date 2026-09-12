@@ -16,21 +16,26 @@ export const AddGoalModal: React.FC = () => {
 
   if (modal !== 'addGoal') return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (targetMinutes <= 0) return;
 
     setIsSubmitting(true);
-    createGoal({
-      languageId,
-      skill,
-      period,
-      targetMinutes: Number(targetMinutes),
-      active,
-      createdAt: Date.now(),
-    }).catch(console.error);
-
-    setModal(null);
+    try {
+      await createGoal({
+        languageId,
+        skill,
+        period,
+        targetMinutes: Number(targetMinutes),
+        active,
+        createdAt: Date.now(),
+      });
+      setModal(null);
+    } catch (err) {
+      console.error('Error saving goal:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

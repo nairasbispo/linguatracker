@@ -17,22 +17,27 @@ export const AddGrammarModal: React.FC = () => {
 
   if (modal !== 'addGrammar') return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
 
     setIsSubmitting(true);
-    createGrammar({
-      languageId,
-      title: title.trim(),
-      status,
-      confidence: Number(confidence),
-      notes: notes.trim() || undefined,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    }).catch(console.error);
-
-    setModal(null);
+    try {
+      await createGrammar({
+        languageId,
+        title: title.trim(),
+        status,
+        confidence: Number(confidence),
+        notes: notes.trim() || undefined,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+      setModal(null);
+    } catch (err) {
+      console.error('Error saving grammar topic:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
