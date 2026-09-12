@@ -1,16 +1,60 @@
 import React, { useState } from 'react';
-import { Volume2, Plus, Trash2, Sparkles, Layers, BookMarked } from 'lucide-react';
+import { Volume2, Plus, Trash2, Sparkles, Layers, BookMarked, Loader2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { fetchPhonetic } from '../services/phoneticService';
+import { VocabularyWord } from '../types';
 
 export const VocabularyView: React.FC = () => {
-  const { languages, vocabulary, setModal, removeWord } = useApp();
+  const { languages, vocabulary, setModal, removeWord, editWord } = useApp();
   const [selectedLangFilter, setSelectedLangFilter] = useState<string>('all');
   const [speakingWordId, setSpeakingWordId] = useState<string | null>(null);
+  const [generatingWordId, setGeneratingWordId] = useState<string | null>(null);
 
   const filteredVocab = vocabulary.filter((item) => {
     if (selectedLangFilter === 'all') return true;
     return item.languageId === selectedLangFilter;
   });
+
+  const handleAutoFillCard = async (item: VocabularyWord) => {
+    const lang = languages.find((l) => l.id === item.languageId);
+    const langName = lang?.name || 'English';
+    const isFrench =
+      lang?.code === 'fr' ||
+      langName.toLowerCase().includes('french') ||
+      langName.toLowerCase().includes('français') ||
+      item.languageId === 'fr';
+
+    setGeneratingWordId(item.id);
+    try {
+      const res = await fetchPhonetic(item.word, langName);
+      const updates: Partial<VocabularyWord> = {};
+      if (!item.pronunciation && res.phonetic) {
+        updates.pronunciation = res.phonetic;
+      }
+      if (isFrench) {
+        if ((!item.meaning || item.meaning === item.word) && res.meaningFr) {
+          updates.meaning = res.meaningFr;
+        }
+        if (!item.meaningEn && res.meaningEn) {
+          updates.meaningEn = res.meaningEn;
+        }
+      } else {
+        if ((!item.meaning || item.meaning === item.word) && (res.meaningEn || res.suggestedMeaning)) {
+          updates.meaning = res.meaningEn || res.suggestedMeaning || item.meaning;
+        }
+      }
+      if (!item.example && res.example) {
+        updates.example = res.example;
+      }
+      if (Object.keys(updates).length > 0) {
+        await editWord(item.id, updates);
+      }
+    } catch (err) {
+      console.error('Failed to auto-fill card:', err);
+    } finally {
+      setGeneratingWordId(null);
+    }
+  };
 
   // Browser Native Web Speech Synthesis (zero AI required!)
   const playPronunciation = (word: string, langCode: string, id: string) => {
@@ -166,10 +210,10 @@ export const VocabularyView: React.FC = () => {
                   </h3>
 
                   {/* Audio Pronunciation Button + Phonetic */}
-                  <div className="flex items-center gap-2 mb-4">
+                  <div className="flex items-center gap-2 mb-4 flex-wrap">
                     <button
                       onClick={() =>
-                        playPronunciation(item.word, item.languageId, item.id)
+                        playPronunciation(item.word, lang?.code || item.languageId, item.id)
                       }
                       className={`p-1.5 rounded-lg border transition-all flex items-center justify-center ${
                         isSpeaking
@@ -180,10 +224,29 @@ export const VocabularyView: React.FC = () => {
                     >
                       <Volume2 className="w-4 h-4" />
                     </button>
-                    {item.pronunciation && (
-                      <span className="text-xs text-slate-500 font-mono">
+                    {item.pronunciation ? (
+                      <span className="text-xs text-slate-600 font-mono bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200/60">
                         {item.pronunciation}
                       </span>
+                    ) : (
+                      <button
+                        onClick={() => handleAutoFillCard(item)}
+                        disabled={generatingWordId === item.id}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-200 transition-colors"
+                        title="Generate phonetic IPA and meaning"
+                      >
+                        {generatingWordId === item.id ? (
+                          <>
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            <span>Generating IPA...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-3 h-3" />
+                            <span>Generate IPA</span>
+                          </>
+                        )}
+                      </button>
                     )}
                   </div>
 

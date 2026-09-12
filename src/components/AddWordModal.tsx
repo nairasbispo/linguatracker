@@ -37,7 +37,8 @@ export const AddWordModal: React.FC = () => {
   const executeFetchDetails = async (
     targetWord: string,
     targetLangName: string,
-    isTargetFrench: boolean
+    isTargetFrench: boolean,
+    forceOverride: boolean = false
   ) => {
     const clean = targetWord.trim();
     if (!clean || clean.length < 2) return;
@@ -46,36 +47,36 @@ export const AddWordModal: React.FC = () => {
     try {
       const result = await fetchPhonetic(clean, targetLangName);
       
-      // Auto-fill phonetic if user hasn't manually edited it
-      if (result.phonetic && !userEditedPronunciationRef.current) {
+      // Auto-fill phonetic if user hasn't manually edited it or forced
+      if (result.phonetic && (forceOverride || !userEditedPronunciationRef.current || !pronunciation.trim())) {
         setPronunciation(result.phonetic);
         setIsPhoneticAutoFilled(true);
       }
 
       if (isTargetFrench) {
         // French word: fill French definition AND English meaning
-        if (result.meaningFr && !userEditedMeaningRef.current) {
+        if (result.meaningFr && (forceOverride || !userEditedMeaningRef.current || !meaning.trim())) {
           setMeaning(result.meaningFr);
           setIsMeaningAutoFilled(true);
-        } else if (result.suggestedMeaning && !userEditedMeaningRef.current) {
+        } else if (result.suggestedMeaning && (forceOverride || !userEditedMeaningRef.current || !meaning.trim())) {
           setMeaning(result.suggestedMeaning);
           setIsMeaningAutoFilled(true);
         }
 
-        if (result.meaningEn && !userEditedMeaningEnRef.current) {
+        if (result.meaningEn && (forceOverride || !userEditedMeaningEnRef.current || !meaningEn.trim())) {
           setMeaningEn(result.meaningEn);
           setIsMeaningEnAutoFilled(true);
         }
       } else {
         // English word: fill English definition only
-        if ((result.meaningEn || result.suggestedMeaning) && !userEditedMeaningRef.current) {
+        if ((result.meaningEn || result.suggestedMeaning) && (forceOverride || !userEditedMeaningRef.current || !meaning.trim())) {
           setMeaning(result.meaningEn || result.suggestedMeaning || '');
           setIsMeaningAutoFilled(true);
         }
       }
 
       // Auto-fill context example if empty
-      if (result.example && !example.trim()) {
+      if (result.example && (!example.trim() || forceOverride)) {
         setExample(result.example);
       }
     } catch (e) {
@@ -85,7 +86,9 @@ export const AddWordModal: React.FC = () => {
     }
   };
 
-  // Auto-fetch details after user pauses typing (700ms debounce)
+  const selectedLangName = selectedLang?.name || 'English';
+
+  // Auto-fetch details after user pauses typing (500ms debounce)
   useEffect(() => {
     if (modal !== 'addWord') return;
 
@@ -107,11 +110,11 @@ export const AddWordModal: React.FC = () => {
     }
 
     const timer = setTimeout(() => {
-      executeFetchDetails(trimmedWord, selectedLang?.name || 'English', isFrench);
-    }, 700);
+      executeFetchDetails(trimmedWord, selectedLangName, isFrench, false);
+    }, 500);
 
     return () => clearTimeout(timer);
-  }, [word, languageId, modal, selectedLang, isFrench]);
+  }, [word, languageId, modal, selectedLangName, isFrench]);
 
   // Reset states on modal open
   useEffect(() => {
@@ -140,7 +143,7 @@ export const AddWordModal: React.FC = () => {
     userEditedMeaningRef.current = false;
     userEditedMeaningEnRef.current = false;
     userEditedPronunciationRef.current = false;
-    await executeFetchDetails(word, selectedLang?.name || 'English', isFrench);
+    await executeFetchDetails(word.trim(), selectedLangName, isFrench, true);
   };
 
   const handleTestAudio = () => {
@@ -176,11 +179,11 @@ export const AddWordModal: React.FC = () => {
     let finalPronunciation = pronunciation.trim();
     let finalExample = example.trim();
 
-    // If user clicked Save before auto-fill finished or without typing meaning,
-    // generate it immediately so they never have to type it!
-    if (!finalMeaning || (isFrench && !finalMeaningEn)) {
+    // If user clicked Save before auto-fill finished, or if IPA or meaning is missing,
+    // fetch them immediately so the card always has complete information!
+    if (!finalMeaning || (isFrench && !finalMeaningEn) || !finalPronunciation) {
       try {
-        const result = await fetchPhonetic(trimmedWord, selectedLang?.name || 'English');
+        const result = await fetchPhonetic(trimmedWord, selectedLangName);
         if (isFrench) {
           if (!finalMeaning && result.meaningFr) {
             finalMeaning = result.meaningFr;

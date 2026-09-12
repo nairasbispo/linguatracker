@@ -84,6 +84,7 @@ export async function fetchPhonetic(
           return {
             phonetic: foundPhonetic,
             suggestedMeaning: meaning,
+            meaningEn: meaning,
             example,
           };
         }
@@ -91,6 +92,51 @@ export async function fetchPhonetic(
     }
   } catch (dictErr) {
     console.warn('Public dictionary fallback failed:', dictErr);
+  }
+
+  // 3. Fallback: French Wiktionary (for French words when backend is offline)
+  const isFrench =
+    languageName.toLowerCase().includes('french') ||
+    languageName.toLowerCase().includes('français') ||
+    languageName.toLowerCase() === 'fr';
+
+  if (isFrench) {
+    try {
+      const wikRes = await fetch(
+        `https://fr.wiktionary.org/w/api.php?action=parse&page=${encodeURIComponent(cleanWord.toLowerCase())}&prop=wikitext&format=json`
+      );
+      if (wikRes.ok) {
+        const wikData = await wikRes.json();
+        const wikitext = wikData.parse?.wikitext?.['*'] || '';
+        const pronMatch =
+          wikitext.match(/\{\{pron\|([^|}]+)\|fr\}\}/i) ||
+          wikitext.match(/\{\{pron\|([^|}]+)\}\}/i);
+        const frenchIpa = pronMatch ? `/${pronMatch[1].trim()}/` : null;
+
+        const defMatch = wikitext.match(/\n#\s+([^\n#]+)/);
+        let defFr = defMatch
+          ? defMatch[1]
+              .replace(/\[\[([^\]|]+\|)?([^\]]+)\]\]/g, '$2')
+              .replace(/\{\{[^}]+\}\}/g, '')
+              .trim()
+          : null;
+        if (defFr && defFr.length > 70) {
+          defFr = defFr.slice(0, 67).trim() + '...';
+        }
+
+        if (frenchIpa || defFr) {
+          return {
+            phonetic: frenchIpa,
+            suggestedMeaning: defFr,
+            meaningFr: defFr,
+            meaningEn: null,
+            example: null,
+          };
+        }
+      }
+    } catch (wikErr) {
+      console.warn('Client-side French Wiktionary lookup failed:', wikErr);
+    }
   }
 
   return { phonetic: null, suggestedMeaning: null };
