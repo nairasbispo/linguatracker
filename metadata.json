@@ -1,0 +1,6 @@
+{
+  "name": "LinguaTrack",
+  "description": "Daily language practice and consistency tracker with real-time sync.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
